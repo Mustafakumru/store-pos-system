@@ -45,6 +45,16 @@ SQL Server adresi `POS_TEST_SQL` ortam değişkeniyle değiştirilebilir (varsay
 POS_TEST_SQL="localhost,1433;User Id=sa;Password=<şifre>" dotnet test
 ```
 
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` — her `main` push'unda ve pull request'te üç paralel iş:
+
+| İş | Runner | Ne yapar |
+|---|---|---|
+| API testleri | ubuntu-latest + SQL Server 2022 servis konteyneri | Birim + entegrasyon testlerinin tamamı; sonuçlar (`.trx`) artifact olarak yüklenir |
+| Kasa uygulaması (WPF) | windows-latest | WPF projesini Release derler |
+| Yönetim paneli | ubuntu-latest, Node 20 | `npm ci` + Angular production derlemesi |
+
 ## Yapılandırma ve gizli bilgiler
 
 | Ayar | Geliştirme | Production |
