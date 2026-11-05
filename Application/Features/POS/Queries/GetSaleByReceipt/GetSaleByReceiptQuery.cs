@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -82,7 +82,7 @@ public class GetSaleByReceiptQueryHandler
             .Include(s => s.Payments)   // ✅ Yeni
             .Include(s => s.Customer)
             .FirstOrDefaultAsync(
-                s => s.ReceiptNumber == request.ReceiptNumber,
+                s => s.ReceiptNumber == request.ReceiptNumber || s.OfflineReference == request.ReceiptNumber,
                 cancellationToken)
             ?? throw new KeyNotFoundException(
                 $"'{request.ReceiptNumber}' numaralı fiş bulunamadı.");

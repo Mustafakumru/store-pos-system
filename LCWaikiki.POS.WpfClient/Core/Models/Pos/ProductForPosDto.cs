@@ -18,7 +18,8 @@ public record ProductForPosDto(
     bool IsLowStock,
     bool IsOutOfStock,
     bool IsNegativeStock,
-    string? ProductCode = null   // urun (model) kodu: W6ER01Z8
+    string? ProductCode = null,   // urun (model) kodu: W6ER01Z8
+    bool FromOfflineCatalog = false   // sunucuya ulasilamadi: yerel katalogdan (stok bilinmiyor)
 );
 // ── Urun kodu ile arama (barkodsuz urun bulma) ─────────────────────
 // GET api/pos/products/by-code/{code}: urun -> renkler -> bedenler (fiyat + stok)

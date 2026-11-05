@@ -107,8 +107,12 @@ public class ApiClient
     /// (ag koptu, yeniden denendi) sunucu islemi TEKRARLAMAZ, ilk yaniti doner.
     /// </summary>
     public async Task<T> PostAsync<T>(string endpoint, object? body, string? idempotencyKey, CancellationToken ct = default)
+        => await PostAsync<T>(endpoint, body, idempotencyKey, allowReauth: true, ct);
+
+    /// <summary>allowReauth=false: oturum suresi dolduysa PIN penceresi ACMAZ, 401 firlatir (arka plan isleri).</summary>
+    public async Task<T> PostAsync<T>(string endpoint, object? body, string? idempotencyKey, bool allowReauth, CancellationToken ct = default)
     {
-        using var response = await SendAsync(() => BuildPost(endpoint, body, idempotencyKey), ct);
+        using var response = await SendAsync(() => BuildPost(endpoint, body, idempotencyKey), ct, allowReauth);
         return (await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct))!;
     }
 

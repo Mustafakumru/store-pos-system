@@ -10,15 +10,23 @@ public record ProcessSaleCommand(
     int? CustomerId = null,
     string? ApprovalToken = null,
     string? CouponCode = null,      // indirim backend'de hesaplanır (DiscountAmount'a dahil EDİLMEZ)
-    int? InstallmentPlan = null     // 4 / 8 = vade farkı (+%5 / +%10) satır tutarlarına eklenir
+    int? InstallmentPlan = null,    // 4 / 8 = vade farkı (+%5 / +%10) satır tutarlarına eklenir
+    OfflineSaleInfo? Offline = null // sunucuya ulaşılamadığında kasada yapılıp sonradan gönderilen satış
 ) : IRequest<ProcessSaleResult>, Application.Common.Behaviors.IConcurrencySensitiveCommand;
 
 public record SaleItemRequest(
     int VariantId,
     int Quantity,
     DiscountType? DiscountType = null,
-    decimal? DiscountValue = null
+    decimal? DiscountValue = null,
+    decimal? OfflineUnitPrice = null   // çevrimdışı satışta kasanın uyguladığı birim fiyat
 );
+
+/// <summary>
+/// Çevrimdışı satış bilgisi. Reference müşterinin fişine basılan belge no'dur
+/// (mağazada tekil); SoldAt satışın kasada yapıldığı an (UTC).
+/// </summary>
+public record OfflineSaleInfo(string Reference, DateTime SoldAt);
 
 /// <summary>
 /// Ödeme kalemi. PaymentType olarak sadece Cash/Card/GiftCard

@@ -50,6 +50,16 @@ public partial class App : Application
         var settings = Services.GetRequiredService<ClientSettings>();
         ConnectivityMonitor.Instance.Start(api, TimeSpan.FromSeconds(Math.Max(5, settings.Api.HealthCheckSeconds)));
 
+        // Girişte: diskteki kataloğu yükle, gönderim döngüsünü başlat, hemen bir tur çalıştır
+        var catalog = Services.GetRequiredService<Core.Offline.OfflineCatalog>();
+        var offlineSync = Services.GetRequiredService<Core.Offline.OfflineSyncService>();
+        auth.LoggedIn += user =>
+        {
+            catalog.Load(user.StoreId);
+            offlineSync.Start();
+            _ = Task.Run(() => offlineSync.TickAsync());
+        };
+
         var loginWindow = Services.GetRequiredService<LoginWindow>();
         loginWindow.Show();
     }
@@ -98,6 +108,15 @@ public partial class App : Application
         services.AddTransient<ReceiptService>();
         services.AddTransient<SuspendedCartService>();
         services.AddTransient<CashDrawerService>();
+
+        // ── Cevrimdisi satis: yerel katalog + disk kuyrugu + arka plan gonderimi ──
+        var offlineQueue = new Core.Offline.OfflineSaleQueue(Core.Offline.OfflineSaleQueue.DefaultRoot, settings.Offline.TerminalNo);
+        Core.Offline.OfflineSaleQueue.Current = offlineQueue;   // XAML sayaci
+        services.AddSingleton(offlineQueue);
+        services.AddSingleton(new Core.Offline.OfflineCatalog(
+            System.IO.Path.Combine(Core.Offline.OfflineSaleQueue.DefaultRoot, "catalog")));
+        services.AddSingleton<Core.Offline.OfflineSyncService>();
+        services.AddTransient<OfflineSalesViewModel>();
 
         // ── ViewModels ───────────────────────────────────────────
         services.AddTransient<LoginViewModel>();

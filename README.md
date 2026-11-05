@@ -94,6 +94,31 @@ dotnet ef database update --project Infrastructure --startup-project WebAPI
 
 Production'da ayrıca: HTTPS zorunlu (HSTS açık), Swagger kapalı, hata yanıtlarında iç ayrıntı yok.
 
+## Çevrimdışı satış
+
+Sunucuya ulaşılamadığında kasa satışa devam eder; bağlantı gelince satışlar otomatik gönderilir.
+
+- **Ürün okutma:** Kasa, mağazanın ürün/fiyat listesini (`GET /api/pos/offline-catalog`) girişte ve 30 dakikada bir
+  `%ProgramData%\LCWaikiki\WPOS\Offline\catalog` altına indirir. Sunucu yanıt vermezse barkod buradan okunur
+  (stok bilinmez; satış stoğu eksiye düşürebilir — çevrimiçi satıştaki gibi uyarıyla kaydedilir).
+- **Satış:** Ödeme gönderilemezse satış `Offline\pending` altına yazılır, fişe 18 haneli çevrimdışı belge no basılır
+  (`9` + mağaza + yyMMdd + kasa no + sıra). Kuyruk, ilk denemenin `Idempotency-Key`'ini kullanır: istek aslında
+  sunucuya ulaşmışsa gönderimde aynı fiş döner, çift satış olmaz. Sunucu ayrıca `(StoreId, OfflineReference)`
+  tekil index'iyle aynı belgeyi ikinci kez kaydetmez.
+- **Çevrimdışıyken yapılamayanlar** (sunucu onayı gerekir): kupon, hediye kartı, indirim, değişim/iade.
+- **Gönderim:** 20 sn'de bir, en eski satış önce, yalnızca o satışı yapan kasiyerin oturumuyla. Ağ hatası / oturum süresi
+  dolması / sunucu meşgulse durur ve sonra tekrar dener (arka planda PIN penceresi açmaz). Sunucu kuralı reddederse
+  satış `Offlineailed`'a taşınır; **Ana Menü → Çevrimdışı Satışlar**'da "Tekrar dene" ya da müdür onayıyla "Arşivle".
+- **Fiyat:** Sunucu satışın kasada yapıldığı andaki fiyatı esas alır. Kasanın kataloğu eskiyse, uygulanan fiyat satıştan
+  önceki 48 saatte geçerli olmuş bir fiyatsa kabul edilir; hiç geçerli olmamış fiyat reddedilir. 7 günden eski satış
+  otomatik kaydedilmez.
+- **Gün sonu:** Gönderilmemiş ya da reddedilmiş çevrimdışı satış varken kasa kapanışı ve Z raporu yapılamaz.
+- **İade:** Müşterinin fişindeki çevrimdışı belge no ile de fiş bulunur, iade/değişim yapılır.
+- **Ayarlar** (kasa `appsettings.json` → `Offline`): `Enabled`, `TerminalNo` (aynı mağazada her kasada farklı; 0 = makine
+  adından), `CatalogRefreshMinutes`, `SyncIntervalSeconds`.
+- **Sınır:** Kasa uygulaması sunucu yokken yeniden açılırsa giriş yapılamaz (PIN sunucuda doğrulanır); çevrimdışı satış,
+  açık oturumla çalışırken bağlantı koptuğunda devreye girer.
+
 ## İşlem kaydı
 
 Panel: **Güvenlik & Sistem → İşlem Kaydı** (Admin tüm mağazalar, mağaza müdürü kendi mağazası; kasiyer erişemez).

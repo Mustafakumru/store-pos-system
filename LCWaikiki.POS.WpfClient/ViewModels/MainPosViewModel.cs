@@ -272,7 +272,11 @@ public partial class MainPosViewModel : BaseViewModel
                 Payments: PaymentVM.PaymentLines.Select(p =>
                     new ReceiptPaymentData(p.Label, p.Amount)).ToList(),
                 ChangeAmount: PaymentVM.ChangeAmount,
-                HeaderLines: BuildHeaderLines()
+                DocumentTitle: response.IsOffline ? "CEVRIMDISI SATIS" : null,
+                HeaderLines: response.IsOffline
+                    ? [.. BuildHeaderLines() ?? [], "Sunucu baglantisi yokken yapildi.",
+                       "Belge no ile iade/degisim yapilabilir;", "kesin fis no baglanti gelince atanir."]
+                    : BuildHeaderLines()
             );
 
             // Fis sessizce kaydedilir - kasiyerin dosya yoluyla ilgilenmesine
@@ -1017,7 +1021,9 @@ public partial class MainPosViewModel : BaseViewModel
                 i.VariantId,
                 i.Quantity,
                 i.DiscountType.HasValue ? (int?)i.DiscountType.Value : null,
-                i.DiscountValue))
+                i.DiscountValue,
+                // Cevrimdisi satista sunucu, kasanin uyguladigi fiyati satis anina gore dogrular
+                OfflineUnitPrice: i.UnitPrice))
             .ToList();
 
         // Iade satirlari (varsa) - ProcessExchangeAsync'in "ReturnItems" tarafina gider.

@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Features.POS.Commands.ProcessExchange;
 using Application.Features.POS.Commands.ProcessRefund;
 using Application.Features.POS.Commands.ProcessSale;
@@ -67,6 +67,14 @@ public class PosController : ControllerBase
     /// Barkodsuz urun bulma: urun kodu (W6ER01Z8) -> renkler -> bedenler
     /// (fiyat + magaza stogu). WPOS Fiyat Gor / Fis ekrani ve mobil uygulama kullanir.
     /// </summary>
+    [HttpGet("offline-catalog")]
+    public async Task<IActionResult> GetOfflineCatalog(CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(_currentUser.StoreId))
+            return Unauthorized(new { message = "Mağaza yetkisi gerekli." });
+        return Ok(await _sender.Send(new Application.Features.POS.Queries.OfflineCatalog.GetOfflineCatalogQuery(), ct));
+    }
+
     [HttpGet("products/by-code/{code}")]
     public async Task<IActionResult> GetProductByCode(string code, CancellationToken ct)
     {

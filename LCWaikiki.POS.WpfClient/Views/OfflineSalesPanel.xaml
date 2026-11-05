@@ -1,0 +1,56 @@
+<UserControl x:Class="LCWaikiki.POS.WpfClient.Views.OfflineSalesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="#99000000"
+          Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Background="White" CornerRadius="10" Width="900" MaxHeight="640" Padding="24"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock Text="CEVRIMDISI SATISLAR" FontSize="20" FontWeight="Bold" Foreground="#1A237E"/>
+                    <TextBlock FontSize="12" Foreground="#616161" TextWrapping="Wrap" Margin="0,6,0,12"
+                               Text="Sunucuya ulasilamazken bu kasada yapilan satislar. Baglanti gelince otomatik gonderilir; her satis yalnizca onu yapan kasiyerin oturumuyla gonderilir. Gonderilmemis ya da reddedilmis satis varken kasa kapanisi ve Z raporu yapilamaz."/>
+                    <TextBlock Text="{Binding Queue.StatusText}" FontWeight="SemiBold" Foreground="#E65100" Margin="0,0,0,8"
+                               Visibility="{Binding Queue.HasPending, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#C62828" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <TextBlock Text="{Binding Info}" Foreground="#2E7D32" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Mudur kodu" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
+                            <TextBox Text="{Binding ManagerPersonelId, UpdateSourceTrigger=PropertyChanged}" Width="110" Padding="6,4"/>
+                            <TextBlock Text="PIN" VerticalAlignment="Center" Margin="12,0,6,0" FontSize="12"/>
+                            <TextBox Text="{Binding ManagerPin, UpdateSourceTrigger=PropertyChanged}" Width="80" Padding="6,4"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="Tekrar dene" Command="{Binding RetryCommand}" Padding="14,8" Margin="0,0,6,0"/>
+                            <Button Content="Arsivle (mudur onayi)" Command="{Binding DismissCommand}" Padding="14,8" Margin="0,0,6,0"/>
+                            <Button Content="Simdi gonder" Command="{Binding SyncNowCommand}" Padding="14,8" Margin="0,0,6,0"
+                                    Background="#1565C0" Foreground="White" BorderThickness="0" FontWeight="SemiBold"/>
+                            <Button Content="Kapat" Command="{Binding CloseCommand}" Padding="14,8"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False"
+                          IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          SelectionMode="Single" FontSize="13" RowHeight="30">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Durum" Binding="{Binding Status}" Width="100"/>
+                        <DataGridTextColumn Header="Belge no" Binding="{Binding Reference}" Width="170"/>
+                        <DataGridTextColumn Header="Zaman" Binding="{Binding SoldAt}" Width="120"/>
+                        <DataGridTextColumn Header="Tutar" Binding="{Binding Amount}" Width="100"/>
+                        <DataGridTextColumn Header="Kasiyer" Binding="{Binding Cashier}" Width="150"/>
+                        <DataGridTextColumn Header="Not" Binding="{Binding Note}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

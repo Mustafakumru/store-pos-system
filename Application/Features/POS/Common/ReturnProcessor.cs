@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -56,7 +56,7 @@ public class ReturnProcessor
             var sale = await _context.Sales
                 .Include(s => s.Items)
                 .Include(s => s.Payments)
-                .FirstOrDefaultAsync(s => s.ReceiptNumber == group.Key, ct)
+                .FirstOrDefaultAsync(s => s.ReceiptNumber == group.Key || s.OfflineReference == group.Key, ct)
                 ?? throw new KeyNotFoundException($"'{group.Key}' numaralı fiş bulunamadı.");
 
             if (sale.Status == SaleStatus.Refunded)

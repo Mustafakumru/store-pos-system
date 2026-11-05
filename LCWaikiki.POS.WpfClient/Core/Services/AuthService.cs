@@ -9,6 +9,9 @@ public class AuthService(ApiClient api)
     private readonly ApiClient _api = api;
 
     public LoginResponse? CurrentUser { get; private set; }
+
+    /// <summary>Basarili giris (yeniden giris dahil): cevrimdisi katalog/senkron baslatilir.</summary>
+    public event Action<LoginResponse>? LoggedIn;
     public bool IsLoggedIn => CurrentUser is not null;
 
     /// <summary>
@@ -27,6 +30,8 @@ public class AuthService(ApiClient api)
         _api.SetToken(response.Token);
         AppLog.Context = $"Kasiyer {response.PersonelId} / Magaza {response.StoreId}";
         AppLog.Info("Giris yapildi.");
+        try { LoggedIn?.Invoke(response); }
+        catch (Exception ex) { AppLog.Error("Giris sonrasi islem hatasi", ex); }
         return response;
     }
 

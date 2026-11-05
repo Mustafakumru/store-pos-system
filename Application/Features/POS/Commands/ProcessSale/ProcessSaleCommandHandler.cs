@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Features.POS.Common;
 using Domain.Entities;
 using Domain.Enums;
@@ -46,6 +46,20 @@ public class ProcessSaleCommandHandler
         SaleRules.ValidateQuantities(request.Items.Select(i => i.Quantity).ToList(), "satış");
 
         var storeId = int.Parse(_currentUser.StoreId);
+
+        // ── Çevrimdışı satış: kurallar + aynı belge daha önce kaydedildiyse aynı sonuç ──
+        DateTime? offlineSoldAt = null;
+        if (request.Offline is not null)
+        {
+            offlineSoldAt = OfflineSales.Validate(request, DateTime.UtcNow);
+            var existing = await _context.Sales.AsNoTracking()
+                .Where(s => s.StoreId == storeId && s.OfflineReference == request.Offline.Reference)
+                .Select(s => new { s.ReceiptNumber, s.FinalAmount, s.CreatedAt })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (existing is not null)
+                return new ProcessSaleResult(true, existing.ReceiptNumber, existing.FinalAmount, existing.CreatedAt, []);
+        }
+
         await CashSessionGuard.EnsureOpenAsync(_context, storeId, _currentUser.UserId, cancellationToken);
         await SaleRules.EnsureCustomerExistsAsync(_context, request.CustomerId, cancellationToken);
         var variantIds = request.Items.Select(i => i.VariantId).Distinct().ToList();
@@ -87,12 +101,10 @@ public class ProcessSaleCommandHandler
         {
             var variant = variants.First(v => v.Id == itemRequest.VariantId);
 
-            var price = variant.PriceHistories
-                .Where(ph => ph.StartDate <= now
-                          && (ph.EndDate == null || ph.EndDate > now))
-                .OrderByDescending(ph => ph.StartDate)   // çakışan kayıtta en güncel fiyat
-                .Select(ph => ph.Price)
-                .FirstOrDefault();
+            // Çevrimdışı satışta fiyat, satışın KASADA yapıldığı andaki fiyattır
+            var price = offlineSoldAt is DateTime soldAt
+                ? OfflineSales.ResolvePrice(variant.PriceHistories, soldAt, itemRequest.OfflineUnitPrice, variant.Product.Name)
+                : OfflineSales.PriceAt(variant.PriceHistories, now);   // çakışan kayıtta en güncel fiyat
 
             if (price == 0)
                 throw new InvalidOperationException(
@@ -226,6 +238,9 @@ public class ProcessSaleCommandHandler
             PaymentType = resolvedPaymentType,
             Status = SaleStatus.Completed,
             HasNegativeStockItem = negativeWarnings.Count > 0,
+            IsOffline = offlineSoldAt is not null,
+            OfflineReference = request.Offline?.Reference,
+            OfflineSoldAt = offlineSoldAt,
             Items = saleItems,
             Payments = appliedPayments.Select(p => new SalePayment
             {

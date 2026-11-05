@@ -1272,6 +1272,16 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsOffline")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OfflineReference")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("OfflineSoldAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PaymentType")
                         .HasColumnType("int");
 
@@ -1314,7 +1324,9 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ReceiptNumber")
                         .IsUnique();
 
-                    b.HasIndex("StoreId");
+                    b.HasIndex("StoreId", "OfflineReference")
+                        .IsUnique()
+                        .HasFilter("[OfflineReference] IS NOT NULL");
 
                     b.ToTable("Sales");
                 });

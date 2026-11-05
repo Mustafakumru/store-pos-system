@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LCWaikiki.POS.WpfClient.Core.Http;
 using LCWaikiki.POS.WpfClient.Core.Models.Pos;
@@ -30,9 +30,11 @@ public partial class MainMenuViewModel : ObservableObject
     public MainMenuViewModel(AuthService authService, CashSessionService cashSessionService,
                              ReportService reportService, PosService posService,
                              ReceiptService receiptService, GiftCardService giftCardService,
-                             ProductLookupViewModel lookupViewModel)
+                             ProductLookupViewModel lookupViewModel,
+                             OfflineSalesViewModel offlineSalesViewModel)
     {
         LookupVM = lookupViewModel;
+        OfflineVM = offlineSalesViewModel;
         // Ana Menu'den "Sepete Ekle": Fis ekrani acilir ve urun eklenir
         LookupVM.AddToCartRequested += barcode => AddToPosRequested?.Invoke(barcode);
         _authService = authService;
@@ -233,6 +235,7 @@ public partial class MainMenuViewModel : ObservableObject
 
     /// <summary>Urun Bul / Fiyat Gor paneli (urun kodu, barkod, ad).</summary>
     public ProductLookupViewModel LookupVM { get; }
+    public OfflineSalesViewModel OfflineVM { get; }
 
     /// <summary>Panelden "Sepete Ekle": Fis ekranina bu barkodla urun eklenir.</summary>
     public event Action<string>? AddToPosRequested;
@@ -590,6 +593,11 @@ public partial class MainMenuViewModel : ObservableObject
             CashPanelError = "Magaza muduru kodu ve PIN gereklidir.";
             return;
         }
+        if (IsClosingMode && UnsentOfflineSalesError() is { } unsentClose)
+        {
+            CashPanelError = unsentClose;
+            return;
+        }
 
         try
         {
@@ -712,8 +720,30 @@ public partial class MainMenuViewModel : ObservableObject
         IsCashPanelOpen = true;
     }
 
+    /// <summary>
+    /// Gonderilmemis cevrimdisi satis varken kasa kapanisi / Z raporu yapilmaz:
+    /// o satislar kasa sayimina ve gun sonu raporuna girmemis olur.
+    /// </summary>
+    private static string? UnsentOfflineSalesError()
+    {
+        var q = Core.Offline.OfflineSaleQueue.Current;
+        q.RefreshCounts();
+        if (q.PendingCount > 0)
+            return $"Bu kasada sunucuya gonderilmemis {q.PendingCount} cevrimdisi satis var. " +
+                   "Baglanti gelip satislar gonderilmeden kasa kapanisi / Z raporu yapilamaz.";
+        if (q.FailedCount > 0)
+            return $"Sunucunun reddettigi {q.FailedCount} cevrimdisi satis var. Magaza muduru " +
+                   "kontrol etmeden kasa kapanisi / Z raporu yapilamaz (Ana Menu > Cevrimdisi Satislar).";
+        return null;
+    }
+
     private async Task ConfirmZReportAsync()
     {
+        if (UnsentOfflineSalesError() is { } unsentZ)
+        {
+            CashPanelError = unsentZ;
+            return;
+        }
         if (!IsManagerUser && (string.IsNullOrWhiteSpace(ManagerPersonelId) || string.IsNullOrWhiteSpace(ManagerPin)))
         {
             CashPanelError = "Magaza muduru kodu ve PIN gereklidir.";

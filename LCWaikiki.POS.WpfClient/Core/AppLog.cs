@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
 namespace LCWaikiki.POS.WpfClient.Core;
@@ -24,6 +24,9 @@ public static class AppLog
     /// <summary>Kasiyer/kasa bilgisi (giris yapilinca set edilir) - her satira eklenir.</summary>
     public static string? Context { get; set; }
 
+    /// <summary>false: hiçbir şey yazılmaz (birim testleri gerçek log dosyasını kirletmesin).</summary>
+    public static bool Enabled { get; set; } = true;
+
     public static void Info(string message) => Write("INFO ", message, null);
     public static void Warn(string message, Exception? ex = null) => Write("WARN ", message, ex);
     public static void Error(string message, Exception? ex = null) => Write("ERROR", message, ex);
@@ -43,6 +46,7 @@ public static class AppLog
 
     private static void Write(string level, string message, Exception? ex)
     {
+        if (!Enabled) return;
         try
         {
             var sb = new StringBuilder()

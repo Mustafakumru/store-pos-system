@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using LCWaikiki.POS.WpfClient.Core;
 using LCWaikiki.POS.WpfClient.Core.Http;
 using LCWaikiki.POS.WpfClient.Core.Models.Pos;
+using LCWaikiki.POS.WpfClient.Core.Offline;
 using LCWaikiki.POS.WpfClient.Core.Services;
 using System.Collections.ObjectModel;
 
@@ -134,11 +135,15 @@ public partial class PaymentViewModel : BaseViewModel
 
     public string CashierName => _authService.CurrentUser?.FullName ?? "Kasiyer";
 
-    public PaymentViewModel(PosService posService, AuthService authService, ClientSettings settings)
+    private readonly OfflineSaleQueue? _offlineQueue;
+
+    public PaymentViewModel(PosService posService, AuthService authService, ClientSettings settings,
+        OfflineSaleQueue? offlineQueue = null)
     {
         _posService = posService;
         _authService = authService;
         _settings = settings;
+        _offlineQueue = offlineQueue;
         PaymentLines.CollectionChanged += (_, _) =>
         {
             RecalculatePayments();
@@ -647,7 +652,30 @@ public partial class PaymentViewModel : BaseViewModel
                     InstallmentPlan: LockedInstallment > 0 ? LockedInstallment : null
                 );
 
-                var response = await _posService.ProcessSaleAsync(request, IdempotencyKey);
+                ProcessSaleResponse response;
+                if (!ConnectivityMonitor.Instance.IsOnline && CanSellOffline(out _))
+                {
+                    // Baglanti zaten yok: zaman asimi beklemeden cevrimdisi kaydet
+                    response = SaveOffline(request);
+                }
+                else
+                {
+                    try
+                    {
+                        response = await _posService.ProcessSaleAsync(request, IdempotencyKey);
+                    }
+                    catch (ApiException ex) when (ex.StatusCode == 0)
+                    {
+                        if (!CanSellOffline(out var reason))
+                        {
+                            SetError($"{ex.Message} Cevrimdisi satis yapilamaz: {reason}");
+                            return false;
+                        }
+                        // AYNI islem anahtariyla kuyruga: istek aslinda sunucuya ulasip
+                        // islendiyse gonderimde ayni fis doner, cift satis olusmaz.
+                        response = SaveOffline(request);
+                    }
+                }
                 SaleCompleted?.Invoke(response);
             }
             return true;
@@ -815,6 +843,46 @@ public partial class PaymentViewModel : BaseViewModel
             _ => RefundPayoutMethod.Cash
         };
         ClearError();
+    }
+
+    // ── Cevrimdisi satis ───────────────────────────────────────────
+    /// <summary>
+    /// Sunucu onayi gerektiren hicbir sey yoksa satis cevrimdisi yapilabilir:
+    /// kupon, hediye karti, indirim (yonetici onayi) ve degisim/iade haric.
+    /// </summary>
+    public bool CanSellOffline(out string reason)
+    {
+        reason = string.Empty;
+        if (_offlineQueue is null || !_settings.Offline.Enabled) reason = "cevrimdisi satis kapali.";
+        else if (_authService.CurrentUser is null) reason = "oturum yok.";
+        else if (PendingReturnItems.Count > 0) reason = "degisim/iade sunucu baglantisi gerektirir.";
+        else if (!string.IsNullOrEmpty(AppliedCouponCode)) reason = "kupon kullanilamaz; kuponu kaldirin.";
+        else if (PaymentLines.Any(p => p.Type == PaymentType.GiftCard)) reason = "hediye karti ile odeme alinamaz.";
+        else if (SubTotalDiscount > 0 || !string.IsNullOrEmpty(ApprovalToken) || SaleItems.Any(i => i.DiscountValue is > 0))
+            reason = "indirim uygulanamaz (yonetici onayi sunucu gerektirir).";
+        else if (SaleItems.Count == 0 || SaleItems.Any(i => i.OfflineUnitPrice is null or <= 0))
+            reason = "urun fiyati bilinmiyor.";
+        return reason.Length == 0;
+    }
+
+    private ProcessSaleResponse SaveOffline(ProcessSaleRequest request)
+    {
+        var user = _authService.CurrentUser!;
+        var soldAt = DateTime.UtcNow;
+        var reference = _offlineQueue!.NextReference(user.StoreId, DateTime.Now);
+        var finalAmount = GrandTotal - SubTotalDiscount - CouponDiscount;
+        _offlineQueue.Enqueue(new OfflineSale
+        {
+            Id = IdempotencyKey,
+            Reference = reference,
+            StoreId = user.StoreId,
+            CashierPersonelId = user.PersonelId,
+            CashierName = user.FullName,
+            SoldAtUtc = soldAt,
+            FinalAmount = finalAmount,
+            Request = request with { Offline = new OfflineSaleInfo(reference, soldAt) }
+        });
+        return new ProcessSaleResponse(true, reference, finalAmount, DateTime.Now, null, IsOffline: true);
     }
 
     private decimal ParseAmount()

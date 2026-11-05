@@ -40,6 +40,12 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
             .HasForeignKey(s => s.CustomerId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.Property(s => s.OfflineReference).HasMaxLength(30);
+        // Aynı çevrimdışı belge iki kez kaydedilemez (Idempotency-Key'e ek ikinci savunma)
+        builder.HasIndex(s => new { s.StoreId, s.OfflineReference })
+            .IsUnique()
+            .HasFilter("[OfflineReference] IS NOT NULL");
+
         builder.HasIndex(s => s.CustomerId);
 
         // ── Kupon ilişkisi ─────────────────────────────────────

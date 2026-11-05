@@ -17,6 +17,17 @@ public class ClientSettings
 
     /// <summary>"Hizli Urunler" paneli: barkodu olmayan/sik satilan urunler (poset vb.).</summary>
     public List<QuickProductSetting> QuickProducts { get; set; } = new();
+    public OfflineSettings Offline { get; set; } = new();
+
+    /// <summary>Cevrimdisi satis (sunucuya ulasilamadiginda satisa devam).</summary>
+    public class OfflineSettings
+    {
+        public bool Enabled { get; set; } = true;
+        /// <summary>Kasa no (1-9999). 0: makine adindan uretilir. Ayni magazada her kasada FARKLI olmali.</summary>
+        public int TerminalNo { get; set; }
+        public int CatalogRefreshMinutes { get; set; } = 30;
+        public int SyncIntervalSeconds { get; set; } = 20;
+    }
 
     /// <summary>"Ulke" secimi listesi (turist / yurt disi musteri).</summary>
     public List<string> Countries { get; set; } = new()

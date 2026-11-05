@@ -40,6 +40,16 @@ public class Sale : BaseEntity
     // Her iadede değiştiği için satırın rowversion'ı değişir: aynı fişe
     // eşzamanlı iki iade ödeme sınırlarını eski veriyle hesaplayamaz.
     public decimal RefundedAmount { get; set; }
+
+    // ── Çevrimdışı satış ─────────────────────────────────────────
+    // Sunucuya ulaşılamadığında kasada yapılıp sonradan gönderilen satış.
+    // Müşterinin fişinde OfflineReference basılıdır; iade/değişimde bu numarayla
+    // da bulunur. ReceiptNumber gönderim anında (mağaza sırasıyla) atanır.
+    public bool IsOffline { get; set; }
+    public string? OfflineReference { get; set; }
+    /// <summary>Satışın kasada gerçekten yapıldığı an (UTC). CreatedAt = sunucuya ulaştığı an.</summary>
+    public DateTime? OfflineSoldAt { get; set; }
+
     // Navigation
     public ICollection<SalePayment> Payments { get; set; } = [];
     public Store Store { get; set; } = null!;
