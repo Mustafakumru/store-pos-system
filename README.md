@@ -1,7 +1,13 @@
-# LC Waikiki POS
+# Store POS System
+
+[![CI](https://github.com/Mustafakumru/store-pos-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Mustafakumru/store-pos-system/actions/workflows/ci.yml)
 
 Mağaza kasa (POS) sistemi: satış, iade/değişim, hediye kartı, kasa oturumu (avans/teslim),
 X/Z raporları, depo → mağaza sevkiyatı ve yönetim paneli.
+
+LC Waikiki'de kasiyer olarak çalıştığım dönemde gözlemlediğim mağaza süreçlerinden (iade,
+değişim, kasa teslimi, Z raporu) esinlenerek geliştirdiğim kişisel bir projedir; şirketin
+resmi yazılımı değildir ve şirkete ait kod ya da veri içermez.
 
 | Bileşen | Teknoloji | Klasör |
 |---|---|---|
