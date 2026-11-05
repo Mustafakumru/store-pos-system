@@ -1,0 +1,33 @@
+# ── .NET ─────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+*.rsuser
+[Tt]est[Rr]esults/
+*.trx
+*.coverage
+*.coveragexml
+
+# ── IDE ──────────────────────────────────────────────
+.vs/
+.idea/
+*.swp
+
+# ── Angular (lcw-pos-admin) ─────────────────────────
+node_modules/
+.angular/
+lcw-pos-admin/dist/
+
+# ── Çalışma zamanı verisi ───────────────────────────
+# Panelden yüklenen ürün görselleri (kullanıcı içeriği, kaynak kod değil)
+WebAPI/wwwroot/images/
+*.log
+logs/
+
+# ── Gizli bilgiler ──────────────────────────────────
+# Production anahtarları ortam değişkeni / user-secrets ile verilir (bkz. README).
+appsettings.Production.json
+appsettings.*.local.json
+*.pfx
+.env

@@ -1,0 +1,42 @@
+// PrimeNG teması ve ikonları angular.json "styles" dizisinde, src/layers.css
+// (katman sırası bildirimi) ARDINDAN yüklenir. Burada @import edilirse
+// derleyici onları dosyanın başına taşıyor, katman sırası bildirimi geride
+// kalıyordu.
+//
+// PrimeNG kurallarını `@layer primeng` içinde tanımlar. Katmansız kurallar
+// HER katmanı ezer - eskiden aşağıdaki genel `* { margin: 0; padding: 0 }`
+// katmansız olduğu için tüm PrimeNG dialog/tablo/buton iç boşluklarını
+// sıfırlıyordu. Genel sıfırlama artık `reset` katmanında, PrimeNG'nin ALTINDA.
+// Tailwind yardımcı sınıfları katmansız kalır ve bileşenlerde PrimeNG'yi ezer.
+//
+// NOT: primeflex.css KALDIRILDI. Panel tamamen Tailwind ile yazılmış (hiçbir
+// PrimeFlex'e özgü sınıf kullanılmıyor) ama PrimeFlex aynı adlı sınıfları
+// `!important` ile tanımlıyor (örn. `w-12` = %100 genişlik, Tailwind'de 3rem)
+// ve Tailwind'i eziyordu: ikon kutuları vb. tüm satırı kaplıyordu.
+
+// Tailwind
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer reset {
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
+
+    // Tailwind preflight kapalı - tarayıcının varsayılan link alt
+    // çizgisi/rengi menü ve kart linklerini bozuyordu. Alt çizgi isteyen
+    // linkler `hover:underline` sınıfını kullanır.
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+}

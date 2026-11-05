@@ -1,0 +1,48 @@
+<Window x:Class="LCWaikiki.POS.WpfClient.Views.ReauthWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WPOS - Oturum Suresi Doldu"
+        Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        Topmost="True" ShowInTaskbar="False" Background="White">
+    <Window.Resources>
+        <Style x:Key="Key" TargetType="Button">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#1565C0"/>
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+    <StackPanel Margin="24">
+        <TextBlock Text="OTURUM SURESI DOLDU" FontSize="18" FontWeight="Bold" Foreground="#C62828"/>
+        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#616161" Margin="0,6,0,14"
+                   Text="Guvenlik icin oturum suresi doldu. Devam etmek icin PIN'inizi girin. Sepet ve odeme ekrani korunur; islem kaldigi yerden devam eder."/>
+        <TextBlock x:Name="UserText" FontSize="14" FontWeight="SemiBold" Foreground="#212121" Margin="0,0,0,6"/>
+        <PasswordBox x:Name="PinBox" FontSize="24" Padding="8,6" MaxLength="6"
+                     HorizontalContentAlignment="Center" KeyDown="PinBox_KeyDown"/>
+        <TextBlock x:Name="ErrorText" Foreground="#C62828" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                   Visibility="Collapsed"/>
+        <UniformGrid Columns="3" Margin="0,12,0,0">
+            <Button Content="1" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="2" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="3" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="4" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="5" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="6" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="7" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="8" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="9" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button Content="&#x2190;" Style="{StaticResource Key}" Background="#DC3545" Click="Backspace_Click"/>
+            <Button Content="0" Style="{StaticResource Key}" Click="Digit_Click"/>
+            <Button x:Name="OkButton" Content="&#x2713;" Style="{StaticResource Key}" Background="#28A745" Click="Ok_Click"/>
+        </UniformGrid>
+        <Button Content="Oturumu Kapat" Margin="3,12,3,0" Height="44" Focusable="False"
+                Background="#6C757D" Foreground="White" BorderThickness="0" FontWeight="SemiBold"
+                Click="Cancel_Click"/>
+    </StackPanel>
+</Window>

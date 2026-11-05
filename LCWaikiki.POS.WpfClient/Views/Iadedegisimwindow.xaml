@@ -1,0 +1,1900 @@
+﻿<Window x:Class="LCWaikiki.POS.WpfClient.Views.IadeDegisimWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:http="clr-namespace:LCWaikiki.POS.WpfClient.Core.Http"
+        xmlns:views="clr-namespace:LCWaikiki.POS.WpfClient.Views"
+        xmlns:converters="clr-namespace:LCWaikiki.POS.WpfClient.Converters"
+        Title="WPOS - Iade-Degisim"
+        Height="768" Width="1366"
+        MinHeight="600" MinWidth="1100"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        Background="#F0F2F5">
+
+    <Window.Resources>
+        <converters:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <Style x:Key="NumBtn" TargetType="Button">
+            <Setter Property="FontSize" Value="32"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Rakam tuslari: IsSaleMode false->Sari/Siyah (Iade), true->Mavi/Beyaz (Satis) -->
+        <Style x:Key="ModeNumBtn" TargetType="Button" BasedOn="{StaticResource NumBtn}">
+            <Setter Property="Background" Value="#FFC107"/>
+            <Setter Property="Foreground" Value="#212121"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSaleMode}" Value="True">
+                    <Setter Property="Background" Value="#007BFF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="OutlineMenuBtn" TargetType="Button">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="80"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#007BFF"/>
+            <Setter Property="Foreground" Value="#007BFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#11000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sepet satirindaki adet -/+ ve sil tuslari -->
+        <Style x:Key="QtyBtn" TargetType="Button">
+            <Setter Property="Background" Value="#546E7A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Popup listelerindeki "Ekle" tusu (cift tiklama yerine dokunmatik icin) -->
+        <Style x:Key="ListAddBtn" TargetType="Button">
+            <Setter Property="Background" Value="#28A745"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ActionBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Padding" Value="0,10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Ust Header: modern, aydinlik, sekmeli ── -->
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#EAEAEA" BorderThickness="0,0,0,1" Height="50">
+            <Grid Margin="12,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Logo -->
+                    <Border CornerRadius="15" Background="#007BFF" Width="30" Height="30">
+                        <TextBlock Text="W" FontSize="15" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Sekmeler -->
+                    <StackPanel Orientation="Horizontal" Margin="20,0,0,0" VerticalAlignment="Center">
+                        <Button Content="Fis" FontSize="13" Foreground="#007BFF"
+                                Background="Transparent" BorderThickness="0" Cursor="Hand" Focusable="False"
+                                VerticalAlignment="Center" Margin="0,0,24,0"
+                                ToolTip="Fis ekranina geri don (Esc)"
+                                Command="{Binding CancelCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <TextBlock Text="Urun Ekle/Cikar" FontSize="13" Foreground="#6C757D"
+                                   VerticalAlignment="Center" Margin="0,0,24,0"/>
+                        <TextBlock Text="Kampanya/Indirim" FontSize="13" Foreground="#6C757D"
+                                   VerticalAlignment="Center" Margin="0,0,24,0"/>
+
+                        <!-- Aktif sekme: Iade & Degisim -->
+                        <Border BorderBrush="#007BFF" BorderThickness="0,0,0,3"
+                                Padding="0,0,0,14" Margin="0,0,24,0" VerticalAlignment="Center">
+                            <TextBlock Text="Iade &amp; Degisim" FontSize="13" FontWeight="Bold" Foreground="#007BFF"/>
+                        </Border>
+
+                        <TextBlock Text="Odeme" FontSize="13" Foreground="#6C757D"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Sag: Kasiyer Rozeti + Saat + Baglanti Durumu -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Border Background="#FFF3CD" CornerRadius="12" Padding="12,5" Margin="0,0,12,0">
+                        <TextBlock Text="{Binding CashierName}" FontSize="12" FontWeight="SemiBold" Foreground="#856404"/>
+                    </Border>
+                    <TextBlock x:Name="ClockText" FontSize="14" FontWeight="Bold"
+                               Foreground="#212121" FontFamily="Consolas"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Ellipse Width="10" Height="10" VerticalAlignment="Center">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="#28A745"/>
+                            <Setter Property="ToolTip" Value="Sunucu baglantisi var"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOnline, Source={x:Static http:ConnectivityMonitor.Instance}}" Value="False">
+                                    <Setter Property="Fill" Value="#DC3545"/>
+                                    <Setter Property="ToolTip" Value="Sunucuya ulasilamiyor"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── Ana Icerik ── -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="420"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Sol: Iade Sepeti ── -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Margin="6,6,6,0">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding ReturnCart}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="12,10">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#FFF3E0"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSaleItem}" Value="True">
+                                                        <Setter Property="Background" Value="#FFFFFF"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock FontSize="13" FontWeight="SemiBold" Text="{Binding ProductName}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#E65100"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSaleItem}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#1565C0"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock FontSize="10" Foreground="#8D6E63">
+                                                    <Run Text="{Binding Barcode, Mode=OneWay}"/>
+                                                    <Run Text=" | "/>
+                                                    <Run Text="{Binding Color, Mode=OneWay}"/>
+                                                    <Run Text=" / "/>
+                                                    <Run Text="{Binding Size, Mode=OneWay}"/>
+                                                    <Run Text=" | "/>
+                                                    <Run Text="{Binding UnitPrice, Mode=OneWay, StringFormat={}{0:N2} TL}"/>
+                                                </TextBlock>
+                                                <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="#6D4C41"
+                                                           Margin="0,2,0,0" Text="{Binding SourceLabel, Mode=OneWay}"/>
+                                                <Button Content="{Binding ReturnReasonName, TargetNullValue='! Iade Nedeni Sec'}"
+                                                        Focusable="False" Cursor="Hand"
+                                                        BorderThickness="1"
+                                                        FontSize="11" Padding="8,4" HorizontalAlignment="Left"
+                                                        Margin="0,4,0,0"
+                                                        Visibility="{Binding IsReturnItem,
+                                                            Converter={StaticResource BoolToVisibilityConverter}}"
+                                                        Command="{Binding DataContext.OpenReturnReasonPanelCommand,
+                                                            RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Setter Property="Background" Value="Transparent"/>
+                                                            <Setter Property="BorderBrush" Value="#E65100"/>
+                                                            <Setter Property="Foreground" Value="#E65100"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsMissingReason}" Value="True">
+                                                                    <Setter Property="Background" Value="#C62828"/>
+                                                                    <Setter Property="BorderBrush" Value="#C62828"/>
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                                    CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                                <TextBlock Text="{TemplateBinding Content}"
+                                                                           FontSize="{TemplateBinding FontSize}" FontWeight="SemiBold"
+                                                                           Foreground="{TemplateBinding Foreground}"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,10,0">
+                                                <TextBlock FontSize="15" FontWeight="Bold"
+                                                           HorizontalAlignment="Right"
+                                                           Text="{Binding LineTotal, Mode=OneWay,
+                                                               Converter={StaticResource DecimalToCurrencyConverter}}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#E65100"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSaleItem}" Value="True">
+                                                                    <Setter Property="Foreground" Value="#1565C0"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <!-- Adet: - [n] + ve satir sil (X) - dokunmatik icin buyuk tuslar -->
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                                    <Button Content="&#x2212;" Width="34" Height="30"
+                                                            Style="{StaticResource QtyBtn}"
+                                                            Command="{Binding DataContext.DecreaseQuantityCommand,
+                                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <TextBlock Text="{Binding Quantity}" Width="34" FontSize="15" FontWeight="Bold"
+                                                               TextAlignment="Center" VerticalAlignment="Center" Foreground="#212121"/>
+                                                    <Button Content="+" Width="34" Height="30"
+                                                            Style="{StaticResource QtyBtn}"
+                                                            Command="{Binding DataContext.IncreaseQuantityCommand,
+                                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="X" Width="34" Height="30" Margin="8,0,0,0"
+                                                            Style="{StaticResource QtyBtn}" Background="#B71C1C"
+                                                            ToolTip="Satiri sil"
+                                                            Command="{Binding DataContext.RemoveReturnItemCommand,
+                                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Image Grid.Column="2" Width="50" Stretch="UniformToFill"
+                                                   Source="{Binding FullImageUrl, TargetNullValue={x:Null}}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Sepetinizde urun yok."
+                                   FontSize="13" Foreground="#9E9E9E"
+                                   HorizontalAlignment="Center" Margin="0,40,0,0"
+                                   Visibility="{Binding HasNoItems, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0"
+                        BorderThickness="0,1,0,0" Padding="14,10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" FontSize="12" Foreground="#424242">
+                            <Run Text="Parca Adet: "/>
+                            <Run Text="{Binding TotalPieceCount, Mode=OneWay}" FontWeight="Bold" Foreground="#1A237E"/>
+                            <Run Text="     Iade: "/>
+                            <Run Text="{Binding ReturnOnlyTotal, Mode=OneWay, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                 FontWeight="Bold" Foreground="#E65100"/>
+                            <Run Text="     Yeni Satis: "/>
+                            <Run Text="{Binding SaleOnlyTotal, Mode=OneWay, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                 FontWeight="Bold" Foreground="#1565C0"/>
+                        </TextBlock>
+                        <TextBlock Grid.Row="1" FontSize="11" Foreground="#9E9E9E"
+                                   HorizontalAlignment="Right" Margin="0,4,0,0"
+                                   Text="Net (eksi: musteriye iade, arti: musteriden tahsil)"/>
+                        <!-- ReturnTotal zaten isaretli (iade eksi, satis arti); ayrica eksi isareti
+                             eklenmez (eskiden cift eksiyle gorunuyordu) -->
+                        <TextBlock Grid.Row="2" FontSize="38" FontWeight="Bold" Foreground="#E65100"
+                                   HorizontalAlignment="Right"
+                                   Text="{Binding ReturnTotal, Mode=OneWay,
+                                       Converter={StaticResource DecimalToCurrencyConverter}}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ── Sag: Arama / Numpad Paneli ── -->
+            <Border Grid.Column="1" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Hata/Bilgi seritleri artik pencerenin en ustunde (popup'larin da
+                         ustunde) - asagida "Mesaj Seritleri" bolumune bakin. -->
+
+                    <!-- Hizli Urunler: en dis Grid'in dogrudan cocugu, Grid.Row=0,
+                         sag ust koseye MUTLAK sekilde sabit - hicbir ic StackPanel'e bagli degil -->
+                    <Button Grid.Row="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,10,0,0"
+                            Width="65" Height="65"
+                            Background="#FFC107" Foreground="#212121"
+                            BorderThickness="0" Padding="0"
+                            Focusable="False" Cursor="Hand"
+                            Command="{Binding ToggleQuickProductsCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <TextBlock TextAlignment="Center" FontFamily="Segoe UI" FontWeight="Bold" FontSize="11"
+                                   Foreground="#212121">
+                            Hizli<LineBreak/>Urunler
+                        </TextBlock>
+                    </Button>
+
+                    <!-- Barkod Girisi + Numpad: Fis ekraniyla BIREBIR ayni mimari (360x360 kare, sari tema) -->
+                    <Grid Grid.Row="1">
+                        <StackPanel Width="360" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
+                            <!-- Bilgi/Gosterge Kutusu: aktif mod, musteri ve islem kilidi -->
+                            <Border Background="White" BorderBrush="#EAEAEA" BorderThickness="1"
+                                    Height="110" Margin="0,0,0,15" Padding="12,8">
+                                <StackPanel>
+                                    <TextBlock FontSize="15" FontWeight="Bold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="MOD: IADE (okutulan urun = fissiz iade)"/>
+                                                <Setter Property="Foreground" Value="#E65100"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSaleMode}" Value="True">
+                                                        <Setter Property="Text" Value="MOD: SATIS (okutulan urun = yeni satis)"/>
+                                                        <Setter Property="Foreground" Value="#1565C0"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12" Foreground="#424242" Margin="0,6,0,0"
+                                               TextTrimming="CharacterEllipsis">
+                                        <Run Text="Musteri: "/>
+                                        <Run FontWeight="SemiBold"
+                                             Text="{Binding SelectedCustomer.FullName, Mode=OneWay, TargetNullValue='(secilmedi)', FallbackValue='(secilmedi)'}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12" Foreground="#424242" Margin="0,4,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="Coklu Islem: KAPALI (tek fis / tek musteri)"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMultiTransactionMode}" Value="True">
+                                                        <Setter Property="Text" Value="Coklu Islem: ACIK (farkli fislerden iade)"/>
+                                                        <Setter Property="Foreground" Value="#2E7D32"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <Grid Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="1 x" FontSize="24" FontWeight="Bold"
+                                           Foreground="#212121" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBox Grid.Column="1" x:Name="BarcodeBox" FontSize="24" FontWeight="Bold"
+                                         Foreground="#1A237E" Background="White"
+                                         CaretBrush="#1A237E" BorderBrush="#90CAF9"
+                                         BorderThickness="1" Padding="10,0"
+                                         HorizontalAlignment="Stretch"
+                                         HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                                         Height="60"
+                                         Text="{Binding SearchBarcodeInput, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="BarcodeBox_KeyDown"/>
+                            </Grid>
+
+                            <!-- Numpad: KESIN 360x360 -> 4x4'te 90x90 kare, IADE (sari) tema -->
+                            <Grid Width="360" Height="360">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Row="0" Grid.Column="0" Content="1" Tag="1" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="0" Grid.Column="1" Content="2" Tag="2" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="0" Grid.Column="2" Content="3" Tag="3" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="0" Grid.Column="3" Content="&#x2190;" Tag="backspace" Style="{StaticResource NumBtn}"
+                                    Background="#DC3545" Foreground="White"/>
+
+                                <Button Grid.Row="1" Grid.Column="0" Content="4" Tag="4" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="1" Grid.Column="1" Content="5" Tag="5" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="1" Grid.Column="2" Content="6" Tag="6" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="1" Grid.Column="3" Content="X" Tag="clear" Style="{StaticResource NumBtn}"
+                                    Background="#DC3545" Foreground="White"/>
+
+                                <Button Grid.Row="2" Grid.Column="0" Content="7" Tag="7" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="2" Grid.Column="1" Content="8" Tag="8" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="2" Grid.Column="2" Content="9" Tag="9" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="2" Grid.Column="3" Grid.RowSpan="2" Content="&#x2713;" Tag="enter"
+                                    Style="{StaticResource NumBtn}" FontSize="28"
+                                    Background="#28A745" Foreground="White"/>
+
+                                <Button Grid.Row="3" Grid.Column="0" Content="," Tag="comma" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="3" Grid.Column="1" Content="0" Tag="0" Style="{StaticResource ModeNumBtn}"/>
+                                <Button Grid.Row="3" Grid.Column="2" Content="C" Tag="clear" Style="{StaticResource NumBtn}"
+                                    Background="#DC3545" Foreground="White"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+
+            <!-- ── Ic Overlay: Manuel Fiyat (ZIndex 20) ── -->
+            <Grid Grid.ColumnSpan="2" Panel.ZIndex="20"
+                  Visibility="{Binding IsManualPricePanelOpen,
+                      Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Background="#000000" Opacity="0.45"/>
+                <Border Background="#1E272E" CornerRadius="10" Width="380"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" ShadowDepth="4" Color="#000000" Opacity="0.5"/>
+                    </Border.Effect>
+                    <StackPanel>
+                        <TextBlock Text="FISSIZ IADE - BIRIM FIYAT" FontSize="14" FontWeight="Bold"
+                                   Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ManualProductName}" FontSize="12" Foreground="#90CAF9"
+                                   HorizontalAlignment="Center" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                        <TextBlock FontSize="11" Foreground="#B0BEC5" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <Run Text="Guncel satis fiyati (ust sinir): "/>
+                            <Run Text="{Binding ManualMaxPrice, Mode=OneWay, StringFormat={}{0:N2} TL}"
+                                 FontWeight="Bold" Foreground="White"/>
+                        </TextBlock>
+                        <TextBlock Text="Fis olmadan iade: odemede Magaza Muduru onayi istenecek."
+                                   FontSize="10" Foreground="#FFCC80" HorizontalAlignment="Center"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+                        <TextBox x:Name="ManualPriceBox" FontSize="22" FontWeight="Bold"
+                                 Foreground="White" Background="#2D3748"
+                                 BorderBrush="#3D5AFE" BorderThickness="0,0,0,2"
+                                 CaretBrush="White" Padding="8,6" Margin="0,0,0,12"
+                                 HorizontalContentAlignment="Right"
+                                 KeyDown="ManualPriceBox_KeyDown"
+                                 Text="{Binding ManualPriceInput, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <!-- Popup ici numpad: arkadaki ana numpad overlay altinda kaldigi icin
+                             dokunmatik ekranda fiyat girilemiyordu. Tag'ler ayni handler'a duser
+                             (IsManualPricePanelOpen iken hedef ManualPriceBox). -->
+                        <UniformGrid Columns="4" Rows="3" Height="150" Margin="0,0,0,12">
+                            <Button Content="1" Tag="1" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="2" Tag="2" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="3" Tag="3" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="&#x2190;" Tag="backspace" Style="{StaticResource NumBtn}" FontSize="20" Background="#DC3545" Foreground="White"/>
+                            <Button Content="4" Tag="4" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="5" Tag="5" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="6" Tag="6" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="," Tag="comma" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="7" Tag="7" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="8" Tag="8" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="9" Tag="9" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                            <Button Content="0" Tag="0" Style="{StaticResource NumBtn}" FontSize="20" Background="#37474F" Foreground="White"/>
+                        </UniformGrid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="Iptal" Focusable="False" Cursor="Hand"
+                                    Background="#37474F" Style="{StaticResource ActionBtn}"
+                                    Margin="0,0,4,0" Command="{Binding CancelManualPriceCommand}"/>
+                            <Button Grid.Column="1" Content="Tamam" Focusable="False" Cursor="Hand"
+                                    Background="#00897B" Style="{StaticResource ActionBtn}"
+                                    Margin="4,0,0,0" Command="{Binding ConfirmManualPriceCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ── Ic Overlay: Iade Nedeni (ZIndex 20) ── -->
+            <Grid Grid.ColumnSpan="2" Panel.ZIndex="20"
+                  Visibility="{Binding IsReturnReasonPanelOpen,
+                      Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Background="#000000" Opacity="0.45"/>
+                <Border Background="White" CornerRadius="10" Width="440" MaxHeight="520"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="20" ShadowDepth="4" Color="#000000" Opacity="0.5"/>
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="IADE NEDENI" FontSize="15" FontWeight="Bold"
+                                       Foreground="#1A237E" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding ReasonTargetItem.ProductName}" FontSize="12"
+                                       Foreground="#E65100" HorizontalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="380">
+                            <ItemsControl ItemsSource="{Binding ReturnReasons}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="3"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Name}" Focusable="False" Cursor="Hand"
+                                                Background="#FDD835" Foreground="#212121"
+                                                FontSize="11" FontWeight="SemiBold"
+                                                Margin="3" Padding="6,14"
+                                                Command="{Binding DataContext.SelectReturnReasonCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                                        <TextBlock Text="{TemplateBinding Content}"
+                                                                   Foreground="{TemplateBinding Foreground}"
+                                                                   FontSize="{TemplateBinding FontSize}"
+                                                                   FontWeight="{TemplateBinding FontWeight}"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"
+                                                                   TextAlignment="Center"
+                                                                   TextWrapping="Wrap"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <StackPanel Grid.Row="2">
+                            <CheckBox Content="Nedeni secilmemis diger iade satirlarina da uygula"
+                                      IsChecked="{Binding ApplyReasonToAll}" Focusable="False"
+                                      FontSize="12" Foreground="#212121" Margin="0,10,0,0"
+                                      Visibility="{Binding MissingReasonCount, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=1}"/>
+                            <Button Content="Vazgec" Focusable="False" Cursor="Hand"
+                                    Background="#37474F" Style="{StaticResource ActionBtn}"
+                                    Margin="0,12,0,0" Command="{Binding CancelReturnReasonPanelCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ── Overlay: Musteri Arama (ZIndex 30) - Aydinlik Tema ──
+                 "Musteri Bilgisiyle Iade" popup'inin (ZIndex 21) icinden acildigi icin
+                 onun USTUNDE olmali (eskiden 20 idi: popup'in arkasinda kaliyor, gorunmuyordu). -->
+            <Grid Grid.ColumnSpan="2" Panel.ZIndex="30"
+              Visibility="{Binding IsCustomerSearchOpen,
+                  Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Background="#000000" Opacity="0.45"/>
+                <Border Background="#FFFFFF" CornerRadius="6"
+                    Width="820" MinHeight="600"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid DataContext="{Binding CustomerSearchVM}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Ust Sekmeler + Kapat (X) -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Musteri Ara Sekmesi - tiklanabilir, dinamik stil -->
+                            <Button Grid.Column="0" Focusable="False" Cursor="Hand"
+                                BorderThickness="0,0,0,3" Padding="0,16"
+                                Command="{Binding ShowSearchTabCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#F0F0F0"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSearchTabActive}" Value="True">
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="BorderBrush" Value="#007BFF"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <TextBlock Text="Musteri Ara" FontSize="15">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#9E9E9E"/>
+                                            <Setter Property="FontWeight" Value="Normal"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSearchTabActive}" Value="True">
+                                                    <Setter Property="Foreground" Value="#212121"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+
+                            <!-- Yeni Musteri Sekmesi - tiklanabilir, dinamik stil -->
+                            <Button Grid.Column="1" Focusable="False" Cursor="Hand"
+                                BorderThickness="0,0,0,3" Padding="0,16"
+                                Command="{Binding ShowNewCustomerTabCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Background" Value="#F0F0F0"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ShowNewCustomerForm}" Value="True">
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="BorderBrush" Value="#007BFF"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <TextBlock Text="Yeni Musteri" FontSize="15">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#9E9E9E"/>
+                                            <Setter Property="FontWeight" Value="Normal"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowNewCustomerForm}" Value="True">
+                                                    <Setter Property="Foreground" Value="#212121"/>
+                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+
+                            <Button Content="&#x2715;" Focusable="False" Cursor="Hand"
+                                Background="Transparent" Foreground="#9E9E9E"
+                                BorderThickness="0" FontSize="14"
+                                Width="30" Height="30"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Margin="0,6,6,0"
+                                Command="{Binding CancelCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="15">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+
+                        <!-- Govde: Sol (Telefon+Numpad, SABIT 350px) / Sag (Sonuc, *) -->
+                        <!-- MUSTERI ARA - test icin simdilik gizlendi, IC YAPIYA DOKUNULMADI -->
+                        <Grid Grid.Row="1" Margin="0,10,0,0"
+                          Visibility="{Binding IsSearchTabActive,
+                              Converter={StaticResource BoolToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="350"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- SOL: Telefon Girisi + Numpad - SABIT genislik, TextBox icerigi etkilemez -->
+                            <StackPanel Grid.Column="0" Margin="20,15,10,15">
+                                <Grid Margin="0,0,0,15">
+                                    <TextBox x:Name="CustomerPhoneBox" FontSize="24"
+                                             Foreground="#212121" Background="White"
+                                             CaretBrush="#007BFF" BorderBrush="#66AFE9"
+                                             BorderThickness="2" Padding="10,0"
+                                             MinHeight="60" VerticalContentAlignment="Center"
+                                             MaxLength="11"
+                                             KeyDown="CustomerPhoneBox_KeyDown"
+                                             Text="{Binding PhoneInput, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Text="Lutfen Telefon Numarasi Giriniz..."
+                                               FontSize="14" Foreground="#9E9E9E"
+                                               Margin="16,0,0,0" IsHitTestVisible="False"
+                                               VerticalAlignment="Center" HorizontalAlignment="Left">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding PhoneInput}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- Numpad: standart Grid (UniformGrid DEGIL), acikca 4 satir/4 sutun -->
+                                <Grid Height="350" HorizontalAlignment="Stretch">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button Grid.Row="0" Grid.Column="0" Content="1" Tag="cust-1" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="2" Tag="cust-2" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="3" Tag="cust-3" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="3" Content="&#x2190;" Tag="cust-backspace" Style="{StaticResource NumBtn}"
+                                        Background="#DC3545" Foreground="White"/>
+
+                                    <Button Grid.Row="1" Grid.Column="0" Content="4" Tag="cust-4" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="5" Tag="cust-5" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="6" Tag="cust-6" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="3" Content="X" Tag="cust-clear" Style="{StaticResource NumBtn}"
+                                        Background="#FFC107" Foreground="#212121"/>
+
+                                    <Button Grid.Row="2" Grid.Column="0" Content="7" Tag="cust-7" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="1" Content="8" Tag="cust-8" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="2" Content="9" Tag="cust-9" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="3" Grid.RowSpan="2" Content="&#x2713;" Tag="cust-enter"
+                                        Style="{StaticResource NumBtn}" FontSize="28"
+                                        Background="#28A745" Foreground="White"/>
+
+                                    <Button Grid.Row="3" Grid.Column="0" Content="," Tag="cust-comma" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="1" Content="0" Tag="cust-0" Style="{StaticResource NumBtn}"
+                                        Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="C" Tag="cust-clearall" Style="{StaticResource NumBtn}"
+                                        Background="#DC3545" Foreground="White"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- SAG: Sonuc (Bulunan Musteri / Yeni Kayit Formu) -->
+                            <StackPanel Grid.Column="1" Margin="30,20,20,20">
+
+                                <!-- Bulunan musteri detaylari -->
+                                <StackPanel Visibility="{Binding HasFoundCustomer,
+                                            Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Grid Margin="0,0,0,10">
+                                        <TextBlock Text="Musteri Numarasi" FontSize="11" Foreground="#9E9E9E"/>
+                                        <TextBlock Text="{Binding FoundCustomer.Id}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#212121" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,10">
+                                        <TextBlock Text="Ad &amp; Soyad" FontSize="11" Foreground="#9E9E9E"/>
+                                        <TextBlock Text="{Binding FoundCustomer.FullName}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#212121" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,10">
+                                        <TextBlock Text="Cep Telefonu" FontSize="11" Foreground="#9E9E9E"/>
+                                        <TextBlock Text="{Binding FoundCustomer.PhoneNumber}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="#212121" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,10">
+                                        <TextBlock Text="SMS Izni" FontSize="11" Foreground="#9E9E9E"/>
+                                        <TextBlock FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Hayir"/>
+                                                    <Setter Property="Foreground" Value="#DC3545"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding FoundCustomer.SmsConsent}" Value="True">
+                                                            <Setter Property="Text" Value="Evet"/>
+                                                            <Setter Property="Foreground" Value="#28A745"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <Button Content="Musteriyi Sec" Focusable="False" Cursor="Hand"
+                                        Background="#28A745" Foreground="White"
+                                        FontSize="14" FontWeight="Bold" BorderThickness="0"
+                                        MinHeight="50" Margin="0,30,0,0"
+                                        Command="{Binding ConfirmSelectionCommand}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                                    Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Bulunamadi -> Yeni kayit formu -->
+                                <StackPanel Visibility="{Binding ShowNewCustomerForm,
+                                            Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="Musteri bulunamadi. Yeni kayit acin:"
+                                           FontSize="12" Foreground="#DC3545" Margin="0,0,0,10"
+                                           TextWrapping="Wrap"/>
+                                    <TextBlock Text="Ad Soyad" FontSize="11" Foreground="#9E9E9E" Margin="0,0,0,4"/>
+                                    <TextBox FontSize="14" Foreground="#212121" Background="White"
+                                         BorderBrush="#66AFE9" BorderThickness="2"
+                                         Padding="8,6" Margin="0,0,0,10" MinHeight="44"
+                                         Text="{Binding NewFullName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Text="Email (opsiyonel)" FontSize="11" Foreground="#9E9E9E" Margin="0,0,0,4"/>
+                                    <TextBox FontSize="14" Foreground="#212121" Background="White"
+                                         BorderBrush="#66AFE9" BorderThickness="2"
+                                         Padding="8,6" Margin="0,0,0,10" MinHeight="44"
+                                         Text="{Binding NewEmail, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <CheckBox Content="SMS izni var" Foreground="#212121" FontSize="12"
+                                          IsChecked="{Binding NewSmsConsent}" Margin="0,0,0,14"/>
+                                    <Button Content="Musteriyi Kaydet" Focusable="False" Cursor="Hand"
+                                        Background="#28A745" Foreground="White"
+                                        FontSize="14" FontWeight="Bold" BorderThickness="0"
+                                        Padding="0,16"
+                                        Command="{Binding CreateCustomerCommand}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                                    Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                       FontSize="11" Foreground="#DC3545"
+                                       Margin="0,10,0,0" TextWrapping="Wrap"
+                                       Visibility="{Binding ErrorMessage,
+                                           Converter={StaticResource StringToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- YENI MUSTERI - kayit formu, su an gorunur (test asamasi) -->
+                        <Grid Grid.Row="1" x:Name="YeniMusteriGrid"
+                          Visibility="{Binding ShowNewCustomerForm,
+                              Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Width="450"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                                <TextBlock Text="Yeni Musteri Kaydi" FontSize="24" FontWeight="Bold"
+                                       Foreground="#424242" Margin="0,0,0,20"/>
+
+                                <TextBlock Text="Ad Soyad" FontSize="16" Foreground="#616161" Margin="0,0,0,5"/>
+                                <TextBox FontSize="20" Foreground="#212121" Background="White"
+                                     CaretBrush="#007BFF" BorderBrush="#B0C4DE"
+                                     BorderThickness="1" Padding="12,0"
+                                     Height="60" HorizontalAlignment="Stretch"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,0,20"
+                                     GotFocus="TextBox_GotFocus_OpenKeyboard"
+                                     Text="{Binding NewFullName, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBlock Text="Cep Telefonu" FontSize="16" Foreground="#616161" Margin="0,0,0,5"/>
+                                <TextBox FontSize="20" Foreground="#212121" Background="White"
+                                     CaretBrush="#007BFF" BorderBrush="#B0C4DE"
+                                     BorderThickness="1" Padding="12,0"
+                                     Height="60" HorizontalAlignment="Stretch"
+                                     VerticalContentAlignment="Center"
+                                     MaxLength="11" Margin="0,0,0,30"
+                                     GotFocus="TextBox_GotFocus_OpenKeyboard"
+                                     Text="{Binding PhoneInput, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <Button Content="Kaydet ve Sec" Focusable="False" Cursor="Hand"
+                                    Background="#28A745" Foreground="White"
+                                    FontSize="24" FontWeight="Bold" BorderThickness="0"
+                                    Width="450" Height="60"
+                                    HorizontalAlignment="Center"
+                                    Command="{Binding CreateCustomerCommand}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                                Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                       FontSize="12" Foreground="#DC3545"
+                                       Margin="0,12,0,0" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center"
+                                       Visibility="{Binding ErrorMessage,
+                                           Converter={StaticResource StringToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Alt: Secim yapmadan devam et -->
+                        <Button Grid.Row="2" Content="Secim yapmadan devam et"
+                            Focusable="False" Cursor="Hand"
+                            Background="#17A2B8" Foreground="White"
+                            FontSize="14" FontWeight="SemiBold" BorderThickness="0"
+                            Padding="20,15" Margin="0,0,0,16"
+                            HorizontalAlignment="Center"
+                            Command="{Binding CancelCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                        Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ── Ic Overlay: Fisle Iade Popup (ZIndex 21) ── -->
+            <Grid Grid.ColumnSpan="2" Panel.ZIndex="21"
+                  Visibility="{Binding IsReceiptSearchOpen,
+                      Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Background="#000000" Opacity="0.45"/>
+                <Border Background="#FFFFFF" CornerRadius="6"
+                        Width="940" MinHeight="560"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="Fisle Iade" FontSize="16" FontWeight="Bold" Foreground="#212121"/>
+                            <Button Content="&#x2715;" Focusable="False" Cursor="Hand"
+                                    Background="Transparent" Foreground="#9E9E9E"
+                                    BorderThickness="0" FontSize="14"
+                                    Width="30" Height="30"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding CloseReceiptSearchCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="15">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="380"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- SOL: Fis No + Mavi Numpad -->
+                            <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                <TextBox x:Name="ReceiptSearchBox" FontSize="24" FontWeight="Bold"
+                                         Foreground="#212121" Background="White"
+                                         CaretBrush="#007BFF" BorderBrush="#007BFF"
+                                         BorderThickness="2" Padding="10,0"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalContentAlignment="Center"
+                                         Height="60" Margin="0,0,0,15"
+                                         KeyDown="ReceiptSearchBox_KeyDown"
+                                         Text="{Binding ReceiptNumberInput, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <Grid Width="360" Height="360">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button Grid.Row="0" Grid.Column="0" Content="1" Tag="1" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="2" Tag="2" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="3" Tag="3" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="3" Content="&#x2190;" Tag="backspace" Style="{StaticResource NumBtn}"
+                                            Background="#DC3545" Foreground="White"/>
+
+                                    <Button Grid.Row="1" Grid.Column="0" Content="4" Tag="4" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="5" Tag="5" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="6" Tag="6" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="3" Content="X" Tag="clear" Style="{StaticResource NumBtn}"
+                                            Background="#FFC107" Foreground="#212121"/>
+
+                                    <Button Grid.Row="2" Grid.Column="0" Content="7" Tag="7" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="1" Content="8" Tag="8" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="2" Content="9" Tag="9" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="3" Grid.RowSpan="2" Content="&#x2713;" Tag="enter"
+                                            Style="{StaticResource NumBtn}" FontSize="28"
+                                            Background="#28A745" Foreground="White"/>
+
+                                    <Button Grid.Row="3" Grid.Column="0" Content="," Tag="comma" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="1" Content="0" Tag="0" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="C" Tag="clear" Style="{StaticResource NumBtn}"
+                                            Background="#DC3545" Foreground="White"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- SAG: Belge Sec + Liste -->
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" VerticalAlignment="Bottom" Margin="0,0,0,2"
+                                           FontSize="11" Foreground="#424242"
+                                           Visibility="{Binding HasFoundReceipt, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Run Text="Fis: "/>
+                                    <Run Text="{Binding FoundReceiptForPopup.ReceiptNumber, Mode=OneWay}" FontWeight="Bold"/>
+                                    <Run Text="  Tarih: "/>
+                                    <Run Text="{Binding FoundReceiptForPopup.SaleDate, Mode=OneWay, StringFormat={}{0:dd.MM.yyyy HH:mm}}"/>
+                                    <Run Text="  Tutar: "/>
+                                    <Run Text="{Binding FoundReceiptForPopup.FinalAmount, Mode=OneWay, StringFormat={}{0:N2} TL}" FontWeight="Bold"/>
+                                </TextBlock>
+                                <Button Grid.Row="0" Content="Belge Sec" Focusable="False" Cursor="Hand"
+                                        Background="#007BFF" Foreground="White"
+                                        FontSize="15" FontWeight="Bold" BorderThickness="0"
+                                        HorizontalAlignment="Stretch" MinHeight="50" Margin="0,0,0,22"
+                                        VerticalAlignment="Top"
+                                        Command="{Binding LoadReceiptForPopupCommand}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+
+                                <ListView Grid.Row="1" ItemsSource="{Binding FoundReceiptForPopup.Items}"
+                                          BorderBrush="#EAEAEA" BorderThickness="1" Background="White"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="MinHeight" Value="44"/>
+                                            <EventSetter Event="MouseDoubleClick" Handler="ReceiptItem_MouseDoubleClick"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RemainingQuantity}" Value="0">
+                                                    <Setter Property="Foreground" Value="#BDBDBD"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Urun" Width="170">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding ProductName}" TextTrimming="CharacterEllipsis"
+                                                                       FontWeight="SemiBold"/>
+                                                            <TextBlock FontSize="10" Foreground="#757575">
+                                                                <Run Text="{Binding Barcode, Mode=OneWay}"/>
+                                                                <Run Text=" "/>
+                                                                <Run Text="{Binding Color, Mode=OneWay}"/>
+                                                                <Run Text="/"/>
+                                                                <Run Text="{Binding Size, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Fiyat" Width="70">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding PriceAtSale, StringFormat={}{0:N2}}"
+                                                                   HorizontalAlignment="Right"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Adet" Width="45" DisplayMemberBinding="{Binding Quantity}"/>
+                                            <GridViewColumn Header="Kalan" Width="50">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding RemainingQuantity, Mode=OneWay}" HorizontalAlignment="Center"
+                                                                   ToolTip="Iade edilebilecek kalan adet (daha once iade edilenler dusulmus)">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="#2E7D32"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding RemainingQuantity}" Value="0">
+                                                                            <Setter Property="Foreground" Value="#C62828"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Iade Tutari" Width="80">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <!-- Birim iade tutari: ara toplam indirimi/kupon dusulmus (backend hesaplar) -->
+                                                        <TextBlock Text="{Binding EffectiveRefundUnitPrice, StringFormat={}{0:N2}}"
+                                                                   FontWeight="Bold" HorizontalAlignment="Right"
+                                                                   ToolTip="Birim iade tutari (fisteki indirimler dusulmus)"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="" Width="75">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="Ekle" Style="{StaticResource ListAddBtn}"
+                                                                Visibility="{Binding RemainingQuantity, Converter={StaticResource CountToVisibilityConverter}}"
+                                                                Command="{Binding DataContext.AddReceiptItemToCartCommand,
+                                                                    RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ── Ic Overlay: Musteri Bilgisiyle Iade Popup (ZIndex 21) ── -->
+            <Grid Grid.ColumnSpan="2" Panel.ZIndex="21"
+                  Visibility="{Binding IsPhoneSearchOpen,
+                      Converter={StaticResource BoolToVisibilityConverter}}">
+                <Border Background="#000000" Opacity="0.45"/>
+                <Border Background="#FFFFFF" CornerRadius="6"
+                        Width="940" MinHeight="560"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="Musteri Bilgisiyle Iade" FontSize="16" FontWeight="Bold" Foreground="#212121"/>
+                            <Button Content="&#x2715;" Focusable="False" Cursor="Hand"
+                                    Background="Transparent" Foreground="#9E9E9E"
+                                    BorderThickness="0" FontSize="14"
+                                    Width="30" Height="30"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding ClosePhoneSearchCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="15">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="380"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- SOL: Telefon Numarasi (Musteri Sec ile) + Barkod + Mavi Numpad -->
+                            <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                <TextBlock Text="Telefon Numarasi" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
+                                <Button Focusable="False" Cursor="Hand"
+                                        Background="#F5F5F5" BorderBrush="#007BFF" BorderThickness="2"
+                                        HorizontalContentAlignment="Left" Padding="10,0"
+                                        Height="50" Margin="0,0,0,12"
+                                        Command="{Binding OpenCustomerSearchCommand}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                                <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"
+                                                                  Margin="10,0"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <TextBlock Text="{Binding SelectedCustomer.PhoneNumber, TargetNullValue='Musteri Sec icin dokunun', FallbackValue='Musteri Sec icin dokunun'}"
+                                               FontSize="16" FontWeight="Bold" Foreground="#212121"/>
+                                </Button>
+
+                                <TextBox x:Name="PhoneSearchBarcodeBox" FontSize="20" FontWeight="Bold"
+                                         Foreground="#212121" Background="White"
+                                         CaretBrush="#007BFF" BorderBrush="#007BFF"
+                                         BorderThickness="2" Padding="10,0"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalContentAlignment="Center"
+                                         Height="55" Margin="0,0,0,15"
+                                         KeyDown="PhoneSearchBarcodeBox_KeyDown"
+                                         Text="{Binding SearchBarcodeInput, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <Grid Width="360" Height="360">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button Grid.Row="0" Grid.Column="0" Content="1" Tag="1" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="2" Tag="2" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="3" Tag="3" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="0" Grid.Column="3" Content="&#x2190;" Tag="backspace" Style="{StaticResource NumBtn}"
+                                            Background="#DC3545" Foreground="White"/>
+
+                                    <Button Grid.Row="1" Grid.Column="0" Content="4" Tag="4" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="5" Tag="5" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="6" Tag="6" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="1" Grid.Column="3" Content="X" Tag="clear" Style="{StaticResource NumBtn}"
+                                            Background="#FFC107" Foreground="#212121"/>
+
+                                    <Button Grid.Row="2" Grid.Column="0" Content="7" Tag="7" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="1" Content="8" Tag="8" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="2" Content="9" Tag="9" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="2" Grid.Column="3" Grid.RowSpan="2" Content="&#x2713;" Tag="enter"
+                                            Style="{StaticResource NumBtn}" FontSize="28"
+                                            Background="#28A745" Foreground="White"/>
+
+                                    <Button Grid.Row="3" Grid.Column="0" Content="," Tag="comma" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="1" Content="0" Tag="0" Style="{StaticResource NumBtn}"
+                                            Background="#007BFF" Foreground="White"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="C" Tag="clear" Style="{StaticResource NumBtn}"
+                                            Background="#DC3545" Foreground="White"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- SAG: Musteri/Belge Sec + Liste -->
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <Button Grid.Row="0" Content="Musteri/Belge Sec" Focusable="False" Cursor="Hand"
+                                        Background="#007BFF" Foreground="White"
+                                        FontSize="15" FontWeight="Bold" BorderThickness="0"
+                                        HorizontalAlignment="Stretch" MinHeight="50" Margin="0,0,0,12"
+                                        Command="{Binding SearchByCustomerCommand}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+
+                                <ListView Grid.Row="1" ItemsSource="{Binding CustomerPurchaseResults}"
+                                          BorderBrush="#EAEAEA" BorderThickness="1" Background="White"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="MinHeight" Value="44"/>
+                                            <EventSetter Event="MouseDoubleClick" Handler="CustomerPurchaseItem_MouseDoubleClick"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Header="Urun" Width="150">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding ProductName}" TextTrimming="CharacterEllipsis"
+                                                                       FontWeight="SemiBold"/>
+                                                            <TextBlock FontSize="10" Foreground="#757575">
+                                                                <Run Text="{Binding Color, Mode=OneWay}"/>
+                                                                <Run Text="/"/>
+                                                                <Run Text="{Binding Size, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Fis / Tarih" Width="125">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding ReceiptNumber}" FontSize="11"/>
+                                                            <TextBlock Text="{Binding SaleDate, StringFormat={}{0:dd.MM.yyyy}}"
+                                                                       FontSize="10" Foreground="#757575"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="Adet" Width="40" DisplayMemberBinding="{Binding Quantity}"/>
+                                            <GridViewColumn Header="Iade Ed." Width="55" DisplayMemberBinding="{Binding RefundedQuantity}"/>
+                                            <GridViewColumn Header="Iade Tutari" Width="75">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding EffectiveRefundUnitPrice, StringFormat={}{0:N2}}"
+                                                                   FontWeight="Bold" HorizontalAlignment="Right"
+                                                                   ToolTip="Birim iade tutari (fisteki indirimler dusulmus)"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Header="" Width="70">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="Ekle" Style="{StaticResource ListAddBtn}"
+                                                                Command="{Binding DataContext.AddCustomerPurchaseToReturnCommand,
+                                                                    RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+        </Grid>
+
+        <!-- ── Hizli Urunler paneli: satis modunda satisa, iade modunda fissiz iadeye eklenir ── -->
+        <Grid Grid.Row="1" Panel.ZIndex="35"
+              Visibility="{Binding IsQuickProductsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="#000000" Opacity="0.45"/>
+            <Border Background="White" CornerRadius="8" Width="600" Padding="20"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock FontSize="16" FontWeight="Bold" Foreground="#1A237E" Margin="0,0,0,12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="HIZLI URUNLER (IADE modu: fissiz iade olarak eklenir)"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSaleMode}" Value="True">
+                                        <Setter Property="Text" Value="HIZLI URUNLER (SATIS modu)"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <ItemsControl ItemsSource="{Binding QuickProducts}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Background="#FFC107" Style="{StaticResource ActionBtn}" Margin="3" Padding="6,16"
+                                        Command="{Binding DataContext.AddQuickProductCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <TextBlock Text="{Binding Label}" Foreground="#212121" TextWrapping="Wrap"
+                                               TextAlignment="Center" FontWeight="Bold"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="Kapat" Background="#6C757D" Style="{StaticResource ActionBtn}"
+                            Margin="3,10,3,0" Command="{Binding ToggleQuickProductsCommand}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── Mesaj Seritleri: hata (kirmizi) / bilgi (yesil). Pencerenin en ustunde,
+             popup'larin da USTUNDE (ZIndex 40) - eskiden sag paneldeydi ve popup
+             acikken overlay'in altinda kaldigi icin hata mesajlari gorunmuyordu.
+             Dokununca kapanir. ── -->
+        <StackPanel Grid.Row="1" Panel.ZIndex="40" VerticalAlignment="Top"
+                    HorizontalAlignment="Right" MaxWidth="560" Margin="0,8,90,0">
+            <Border Background="#C62828" CornerRadius="6" Padding="16,10" Cursor="Hand"
+                    Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.4"/>
+                </Border.Effect>
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DismissErrorCommand}"/>
+                </Border.InputBindings>
+                <TextBlock Text="{Binding ErrorMessage}" FontSize="14" FontWeight="SemiBold"
+                           Foreground="White" TextWrapping="Wrap"/>
+            </Border>
+            <Border Background="#2E7D32" CornerRadius="6" Padding="16,8" Margin="0,6,0,0" Cursor="Hand"
+                    Visibility="{Binding InfoMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.4"/>
+                </Border.Effect>
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DismissInfoCommand}"/>
+                </Border.InputBindings>
+                <TextBlock Text="{Binding InfoMessage}" FontSize="13" FontWeight="SemiBold"
+                           Foreground="White" TextWrapping="Wrap"/>
+            </Border>
+            <!-- Islem suruyor gostergesi -->
+            <ProgressBar IsIndeterminate="True" Height="4" Width="200" Margin="0,6,0,0"
+                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+        </StackPanel>
+
+        <!-- ── Islemler Paneli: yatay, aydinlik, Alt Bar'in hemen ustunde ── -->
+        <Grid Grid.Row="1" Panel.ZIndex="25"
+              Visibility="{Binding IsHamburgerMenuOpen,
+                  Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="#33000000"/>
+            <Border Background="#FFFFFF" BorderBrush="#EAEAEA" BorderThickness="0,1,0,0"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
+                <StackPanel Margin="16,10,16,14">
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock Text="Islemler" FontSize="14" Foreground="#6C757D"/>
+                        <Button Content="&#x2715;" HorizontalAlignment="Right"
+                                Background="Transparent" Foreground="#9E9E9E"
+                                BorderThickness="0" FontSize="14"
+                                Focusable="False" Cursor="Hand"
+                                Command="{Binding CloseHamburgerMenuCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="Transparent" Padding="4,0">
+                                        <ContentPresenter/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                    <Border Height="1" Background="#EAEAEA" Margin="0,0,0,12"/>
+
+                    <!-- NOT: Bu butonlarin cogu simdilik gorsel yer tutucudur -
+                         ExchangeViewModel'de bu islevlerin cogunun karsiligi henuz yok. -->
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource OutlineMenuBtn}"
+                                Command="{Binding ChangeDocumentTypeCommand}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x1F4CB;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Belge Tipini" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Degistir (Fis)"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RequestInvoice}" Value="True">
+                                                    <Setter Property="Text" Value="(FATURA)"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource OutlineMenuBtn}"
+                                Command="{Binding AddGiftCardCommand}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x1F381;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Hediye Karti" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="Ekle" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Width="90" Height="80" Margin="5" Focusable="False" Cursor="Hand"
+                                Background="#007BFF" BorderThickness="0" Foreground="White"
+                                Command="{Binding AddGiftCardCommand}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x1F4B3;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Coklu H.Kart" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="Yukleme" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource OutlineMenuBtn}"
+                                BorderBrush="#DC3545" Foreground="#DC3545"
+                                Command="{Binding CancelLastLineCommand}"
+                                ToolTip="Sepete en son eklenen satiri kaldirir">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x274C;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Satir" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="Iptal" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource OutlineMenuBtn}"
+                                Command="{Binding OpenCashDrawerCommand}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x1F4B0;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Cekmece" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="Ac" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource OutlineMenuBtn}"
+                                Command="{Binding OpenProductLookupCommand}"
+                                ToolTip="Urun kodu / barkod / ad ile urun bul: renk ve beden secimi">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="&#x1F50D;" FontSize="20" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Fiyat" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="Gor" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── Alt Islem Cubugu: beyaz zemin, gruplar arasi ferah bosluklu ── -->
+        <Border Grid.Row="2" Background="White" BorderBrush="#EAEAEA" BorderThickness="0,1,0,0" Padding="10,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="&#x2630;" FontSize="18" FontWeight="Bold"
+                        Foreground="#212121" Background="Transparent"
+                        BorderThickness="0" Width="44" Height="44"
+                        Margin="0,0,20,0" Focusable="False" Cursor="Hand"
+                        Command="{Binding ToggleHamburgerMenuCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <Button Focusable="False" Cursor="Hand"
+                        FontSize="12" FontWeight="Bold" BorderThickness="0"
+                        Width="90" Height="70" Margin="0,0,24,0"
+                        Command="{Binding ToggleSaleModeCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FFC107"/>
+                            <Setter Property="Foreground" Value="#212121"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSaleMode}" Value="True">
+                                    <Setter Property="Background" Value="#007BFF"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Iade&#x0a;Satisa gec"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSaleMode}" Value="True">
+                                        <Setter Property="Text" Value="Satis&#x0a;Iade'ye gec"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+
+                <!-- Iade Islem Uclusu: KARE form (75x75), kompakt bosluklu -->
+                <Button Focusable="False" Cursor="Hand"
+                        Background="#FFC107" Foreground="#212121"
+                        BorderThickness="0"
+                        Width="75" Height="75" Margin="0,0,4,0"
+                        Command="{Binding OpenPhoneSearchCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <TextBlock Text="Musteri Bilgisiyle Iade" TextWrapping="Wrap"
+                               TextAlignment="Center" FontSize="10" FontWeight="Bold"
+                               Foreground="#212121"/>
+                </Button>
+                <Button Focusable="False" Cursor="Hand"
+                        Background="#FFC107" Foreground="#212121"
+                        BorderThickness="0"
+                        Width="75" Height="75" Margin="0,0,4,0"
+                        Command="{Binding OpenReceiptSearchCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <TextBlock Text="Fisle Iade" TextWrapping="Wrap"
+                               TextAlignment="Center" FontSize="10" FontWeight="Bold"
+                               Foreground="#212121"/>
+                </Button>
+                <Button Focusable="False" Cursor="Hand"
+                        BorderThickness="0"
+                        Width="75" Height="75" Margin="0,0,24,0"
+                        Command="{Binding ToggleMultiTransactionModeCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FFC107"/>
+                            <Setter Property="Foreground" Value="#212121"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsMultiTransactionMode}" Value="True">
+                                    <Setter Property="Background" Value="#2E7D32"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock Text="Coklu Islem" TextWrapping="Wrap"
+                               TextAlignment="Center" FontSize="10" FontWeight="Bold"/>
+                </Button>
+
+                <!-- Ferah ayirici bosluk -->
+                <Grid Width="30"/>
+
+                <!-- Sag Grup: Musteri Sec / Islem Secimi / ARA TOPLAM -->
+                <Button Background="#007BFF" Foreground="White"
+                        BorderThickness="0"
+                        Width="100" Height="70" Margin="0,0,8,0"
+                        Focusable="False" Cursor="Hand"
+                        Command="{Binding OpenCustomerSearchCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <TextBlock Text="{Binding SelectedCustomer.FullName, FallbackValue='Musteri Sec'}"
+                               TextWrapping="Wrap" TextAlignment="Center"
+                               FontSize="12" FontWeight="Bold" Foreground="White"/>
+                </Button>
+
+                <Button Content="Islem Secimi" Background="#FFC107" Foreground="#212121"
+                        FontSize="11" FontWeight="Bold" BorderThickness="0"
+                        Width="90" Height="70" Margin="0,0,8,0"
+                        Focusable="False" Cursor="Hand"
+                        Command="{Binding ToggleHamburgerMenuCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <Button Content="Geri Don" Background="#6C757D" Foreground="White"
+                        FontSize="13" FontWeight="Bold" BorderThickness="0"
+                        Width="90" Height="70" Margin="0,0,8,0"
+                        Focusable="False" Cursor="Hand"
+                        ToolTip="Fis ekranina don (Esc). Sepet doluysa onay ister."
+                        Command="{Binding CancelCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Nedeni secilmemis iade satiri uyarisi -->
+                <Border Background="#C62828" CornerRadius="4" Height="70" Margin="0,0,8,0" Padding="10,0"
+                        Visibility="{Binding MissingReasonCount, Converter={StaticResource CountToVisibilityConverter}}">
+                    <TextBlock Foreground="White" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"
+                               TextAlignment="Center">
+                        <Run Text="{Binding MissingReasonCount, Mode=OneWay}"/>
+                        <Run Text="satir"/>
+                        <LineBreak/>
+                        <Run Text="neden bekliyor"/>
+                    </TextBlock>
+                </Border>
+
+                <Button Content="ARA TOPLAM" Background="#28A745" Foreground="White"
+                        FontSize="13" FontWeight="Bold" BorderThickness="0"
+                        Width="120" Height="70"
+                        Focusable="False" Cursor="Hand"
+                        Command="{Binding TransferToSaleCommand}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
+    <!-- Urun Bul / Fiyat Gor: urun kodu (W6ER01Z8) -> renk -> beden (en ust katman) -->
+    <views:ProductLookupPanel Grid.RowSpan="3" Panel.ZIndex="70" DataContext="{Binding LookupVM}"/>
+    </Grid>
+</Window>

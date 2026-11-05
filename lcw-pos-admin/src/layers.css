@@ -1,0 +1,7 @@
+/*
+ * CSS katman sırası - angular.json "styles" dizisinde EN BAŞTA yüklenmeli.
+ * Önce bildirilen katman en DÜŞÜK önceliklidir: genel sıfırlama (reset)
+ * PrimeNG temasının ALTINDA kalır. Katmansız kurallar (Tailwind yardımcı
+ * sınıfları) her ikisini de ezer.
+ */
+@layer reset, primeng;
