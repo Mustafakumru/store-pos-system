@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Application;
 using Infrastructure;
 using Infrastructure.Identity;
@@ -32,13 +32,8 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 // depoya erişen herkes geçerli Admin token'ı üretebilirdi). Geliştirmede
 // appsettings.Development.json / user-secrets, production'da ortam değişkeni
 // (JwtSettings__SecretKey) ya da gizli anahtar kasası kullanılır.
-var secretKeyText = jwtSettings["SecretKey"];
-if (string.IsNullOrWhiteSpace(secretKeyText) || Encoding.UTF8.GetByteCount(secretKeyText) < 32)
-    throw new InvalidOperationException(
-        "JwtSettings:SecretKey tanımlı değil ya da 32 bayttan kısa. Geliştirmede " +
-        "appsettings.Development.json veya 'dotnet user-secrets', production'da " +
-        "JwtSettings__SecretKey ortam değişkeni ile verin.");
-var secretKey = Encoding.UTF8.GetBytes(secretKeyText);
+// Depodaki geliştirme anahtarı geliştirme dışında reddedilir (bkz. StartupGuards).
+var secretKey = StartupGuards.ValidateJwtSecret(jwtSettings["SecretKey"], builder.Environment);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -47,7 +42,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
 
     options.TokenValidationParameters = new TokenValidationParameters
@@ -82,9 +77,7 @@ builder.Services.AddHttpContextAccessor();
 // ─────────────────────────────────────────────
 // 5. CORS — Angular geliştirme sunucusu için
 // ─────────────────────────────────────────────
-var allowedOrigins = builder.Configuration
-    .GetSection("AllowedOrigins")
-    .Get<string[]>()!;
+var allowedOrigins = StartupGuards.ValidateAllowedOrigins(builder.Configuration, builder.Environment);
 
 builder.Services.AddCors(options =>
 {
@@ -147,29 +140,17 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // ─────────────────────────────────────────────
-// 7. MİGRASYON & SEED & SQLite WAL MODU
+// 7. MİGRASYON & SEED
 // ─────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider
         .GetRequiredService<ApplicationDbContext>();
 
-    // Bekleyen migration'ları otomatik uygula
-    await db.Database.MigrateAsync();
-
-    // ── SQLite WAL Modu ──────────────────────────────────────
-    // WAL (Write-Ahead Logging): Okuma ve yazma işlemleri
-    // birbirini bloklamaz. Online POS için kritik.
-    try
-    {
-        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
-        await db.Database.ExecuteSqlRawAsync("PRAGMA synchronous=NORMAL;");
-    }
-    catch
-    {
-        // Migration henüz oluşturulmadıysa sessizce geç
-    }
-    // ─────────────────────────────────────────────────────────
+    // Geliştirmede otomatik; production'da bekleyen migration varsa API açılmaz
+    // (Database:AutoMigrate ile değiştirilebilir - bkz. StartupGuards)
+    await StartupGuards.ApplyMigrationPolicyAsync(db, app.Configuration, app.Environment,
+        app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup"));
 
     // Rolleri ve admin kullanıcısını oluştur
     // Production'da test verisi / bilinen şifreli admin oluşturulmaz
@@ -193,14 +174,18 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "LC Waikiki POS API v1");
         c.RoutePrefix = "swagger";
     });
+    app.MapGet("/", () => Results.Redirect("/swagger"));
+}
+else
+{
+    // Tarayıcı bu alan adına bir daha yalnızca HTTPS ile gelsin
+    app.UseHsts();
 }
 
-app.MapGet("/", () => Results.Redirect("/swagger"));
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("AngularPolicy");
-app.UseStaticFiles();
 // Authentication → Authorization sırası değişmemeli
 app.UseAuthentication();
 // PIN'i değişmemiş hesap sadece PIN değiştirebilir (bkz. MustChangePinMiddleware)

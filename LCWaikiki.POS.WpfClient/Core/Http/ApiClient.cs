@@ -34,6 +34,13 @@ public class ApiClient
     public Func<Task<bool>>? ReauthenticateAsync { get; set; }
     private readonly SemaphoreSlim _reauthGate = new(1, 1);
 
+    /// <summary>Testler icin: sahte HTTP isleyicisi ve serbest zaman asimi.</summary>
+    internal ApiClient(HttpMessageHandler handler, string baseUrl, TimeSpan timeout)
+    {
+        _http = new HttpClient(handler) { BaseAddress = new Uri(baseUrl), Timeout = timeout };
+        _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    }
+
     public ApiClient(string baseUrl, bool allowUntrustedLocalhostCertificate = false, int timeoutSeconds = 30)
     {
         var baseUri = new Uri(baseUrl);

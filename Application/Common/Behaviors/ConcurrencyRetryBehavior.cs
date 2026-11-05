@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -28,7 +28,9 @@ public class ConcurrencyConflictException : Exception
 public class ConcurrencyRetryBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private const int MaxAttempts = 4;
+    // Yogun anda (ayni urun bircok kasada ayni anda) her turda yalniz bir islem
+    // kazanir: 4 deneme 15 eszamanli satista yetmiyordu (test: HardeningTests).
+    private const int MaxAttempts = 8;
     private readonly IApplicationDbContext _context;
     private readonly ILogger<ConcurrencyRetryBehavior<TRequest, TResponse>> _logger;
 
@@ -60,7 +62,8 @@ public class ConcurrencyRetryBehavior<TRequest, TResponse> : IPipelineBehavior<T
                 }
                 _logger.LogInformation("{Command}: eszamanlilik cakismasi, yeniden deneniyor ({Attempt})", typeof(TRequest).Name, attempt);
                 // Ayni anda yeniden deneyen istekler tekrar carpismasin
-                await Task.Delay(Random.Shared.Next(15, 60) * attempt, cancellationToken);
+                // (artan, rastgele bekleme; en kotu durumda toplam ~2 sn)
+                await Task.Delay(Random.Shared.Next(20, 80) * Math.Min(attempt, 5), cancellationToken);
             }
         }
     }

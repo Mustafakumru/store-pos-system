@@ -21,4 +21,7 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="LCWaikiki.POS.WpfClient.Tests" />
+  </ItemGroup>
 </Project>

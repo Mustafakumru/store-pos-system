@@ -38,6 +38,12 @@ dotnet test
 ```
 
 - **Birim testleri** (`Unit/`): ödeme/para üstü, iade tutarı, telefon normalizasyonu, PIN hash ve kuralları.
+- **Canlıya hazırlık testleri** (`Api/HardeningTests.cs`): eşzamanlı hediye kartı harcaması, eşzamanlı satışlarda
+  stok tutarlılığı, `Idempotency-Key` (tekrar, eşzamanlı tekrar, hata sonrası tekrar, başka uçta kullanım),
+  adet/tutar sınırları, eşzamanlı ürün kodu üretimi. Açılış kontrolleri: `Unit/StartupGuardTests.cs`.
+- **Kasa uygulaması testleri** (`tests/LCWaikiki.POS.WpfClient.Tests`, sunucu gerektirmez): oturum süresi dolunca
+  PIN ile yeniden giriş ve aynı işlem anahtarıyla tekrar gönderim, ağ hatası/zaman aşımı mesajları ve bağlantı
+  göstergesi, ödeme ekranı (para üstü, kart üst sınırı, çift gönderim koruması), sepet satırı hesapları.
 - **Entegrasyon testleri** (`Api/`): API'nin tamamı bellek içinde çalışır (kimlik doğrulama, middleware,
   MediatR pipeline, EF Core). Her çalıştırma **benzersiz adlı geçici bir veritabanı** oluşturur ve sonunda siler.
   Her test kendi mağazasını/kullanıcılarını kurar; testler birbirinden bağımsızdır.
@@ -58,13 +64,32 @@ POS_TEST_SQL="localhost,1433;User Id=sa;Password=<şifre>" dotnet test
 | İş | Runner | Ne yapar |
 |---|---|---|
 | API testleri | ubuntu-latest + SQL Server 2022 servis konteyneri | Birim + entegrasyon testlerinin tamamı; sonuçlar (`.trx`) artifact olarak yüklenir |
-| Kasa uygulaması (WPF) | windows-latest | WPF projesini Release derler |
+| Kasa uygulaması (WPF) | windows-latest | WPF projesini Release derler + kasa uygulaması testleri |
 | Yönetim paneli | ubuntu-latest, Node 20 | `npm ci` + Angular production derlemesi |
 
 ## Yapılandırma ve gizli bilgiler
 
 | Ayar | Geliştirme | Production |
 |---|---|---|
-| `JwtSettings:SecretKey` (≥ 32 bayt) | `appsettings.Development.json` | `JwtSettings__SecretKey` ortam değişkeni / anahtar kasası — **tanımsızsa API açılmaz** |
+| `JwtSettings:SecretKey` (≥ 32 bayt) | `appsettings.Development.json` | `JwtSettings__SecretKey` ortam değişkeni / anahtar kasası — **tanımsız, kısa ya da depodaki geliştirme anahtarıysa API açılmaz** |
 | `Seed:AdminPassword` | gerekmez (`Admin123!`) | ilk admin için zorunlu; test mağazası/kasiyeri oluşturulmaz |
 | `RateLimiting:PerUserPerMinute` / `PerIpPerMinute` | 20 / 120 | 20 / 120 |
+| `AllowedOrigins` (panel adresi, CORS) | `http(s)://localhost:4200` | `AllowedOrigins__0=https://panel...` — **boş, `*` ya da `http://` ise API açılmaz** |
+| `Database:AutoMigrate` | açık (varsayılan) | kapalı (varsayılan) — bekleyen migration varsa API açılmaz |
+| `AllowedHosts` | `*` | API'nin alan adı |
+
+Örnek production ayarları: `WebAPI/appsettings.Production.example.json` (gerçek değerler dosyaya değil ortam değişkenine yazılır; `appsettings.Production.json` git'e girmez).
+
+### Production'a çıkış (veritabanı)
+
+Şema değişiklikleri API açılışında kendiliğinden uygulanmaz: önce yedek alınır, sonra tek noktadan uygulanır.
+
+```bash
+# 1) Yedek (SQL Server)
+sqlcmd -S <sunucu> -Q "BACKUP DATABASE LCWaikikiPOS TO DISK='C:\Yedek\LCWaikikiPOS_<tarih>.bak'"
+# 2) Migration'ları uygula (ya da: dotnet ef migrations bundle ile tek dosya üretip sunucuda çalıştır)
+dotnet ef database update --project Infrastructure --startup-project WebAPI
+# 3) API'yi başlat
+```
+
+Production'da ayrıca: HTTPS zorunlu (HSTS açık), Swagger kapalı, hata yanıtlarında iç ayrıntı yok.

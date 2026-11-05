@@ -75,7 +75,7 @@ jobs:
 
   # ── WPF kasa uygulaması: sadece Windows'ta derlenebilir ───────────────
   wpf-build:
-    name: Kasa uygulaması (WPF) derleme
+    name: Kasa uygulaması (WPF) derleme + test
     runs-on: windows-latest
     timeout-minutes: 15
 
@@ -87,7 +87,22 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Build
-        run: dotnet build LCWaikiki.POS.WpfClient/LCWaikiki.POS.WpfClient.csproj -c Release
+        run: dotnet build tests/LCWaikiki.POS.WpfClient.Tests -c Release
+
+      # Sunucu gerektirmez: ApiClient (oturum yenileme, islem anahtari, ag hatalari),
+      # odeme ekrani ve sepet hesaplari sahte HTTP isleyicisiyle sinanir.
+      - name: Test
+        run: >
+          dotnet test tests/LCWaikiki.POS.WpfClient.Tests --no-build -c Release
+          --logger "trx;LogFileName=wpf-test-results.trx"
+          --results-directory TestResults
+
+      - name: Test sonuçlarını yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpf-test-results
+          path: TestResults/*.trx
 
   # ── Angular yönetim / mağaza paneli ───────────────────────────────────
   admin-panel:
