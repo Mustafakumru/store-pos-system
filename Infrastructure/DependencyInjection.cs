@@ -37,6 +37,10 @@ public static class DependencyInjection
         services.AddScoped<IApplicationDbContext>(sp =>
             sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        // Veritabanı yedeği: servis + günlük zamanlayıcı (Backup:Enabled)
+        services.AddSingleton<Infrastructure.Backup.DatabaseBackupService>();
+        services.AddHostedService<Infrastructure.Backup.BackupHostedService>();
         services.AddSingleton<ApprovalTokenUsageStore>();
         services.AddScoped<IApprovalTokenService, ApprovalTokenService>();
         // ASP.NET Core Identity

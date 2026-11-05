@@ -1,4 +1,4 @@
-using Infrastructure.Persistence;
+﻿using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +25,23 @@ public class PosApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected virtual int PerUserRateLimit => 100_000;
     protected virtual int PerIpRateLimit => 100_000;
 
+    /// <summary>
+    /// Yedek klasörü (SQL Server tarafındaki yol). POS_TEST_BACKUP_DIR; yoksa uzak/konteyner
+    /// sunucuda /var/opt/mssql/data, LocalDB'de geçici klasör.
+    /// </summary>
+    public static string BackupDirectory
+    {
+        get
+        {
+            var configured = Environment.GetEnvironmentVariable("POS_TEST_BACKUP_DIR");
+            if (!string.IsNullOrWhiteSpace(configured)) return configured;
+            if (Environment.GetEnvironmentVariable("POS_TEST_SQL") is { Length: > 0 }) return "/var/opt/mssql/data";
+            var local = Path.Combine(Path.GetTempPath(), "lcwpos-test-backups");
+            Directory.CreateDirectory(local);
+            return local;
+        }
+    }
+
     public string ConnectionString
     {
         get
@@ -42,6 +59,8 @@ public class PosApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:DefaultConnection", ConnectionString);
         builder.UseSetting("RateLimiting:PerUserPerMinute", PerUserRateLimit.ToString());
         builder.UseSetting("RateLimiting:PerIpPerMinute", PerIpRateLimit.ToString());
+        // Yedek testleri: klasör SQL Server'ın gördüğü yol (CI: Linux konteyner)
+        builder.UseSetting("Backup:Directory", BackupDirectory);
     }
 
     public Task InitializeAsync()

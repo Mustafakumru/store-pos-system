@@ -182,6 +182,9 @@ else
     app.UseHsts();
 }
 
+// İşlem kaydı EN DIŞTA: hata ara katmanının ürettiği son durum kodunu ve
+// kimlik doğrulamanın doldurduğu kullanıcıyı görür (bkz. AuditMiddleware)
+app.UseMiddleware<AuditMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseStaticFiles();

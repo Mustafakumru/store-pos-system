@@ -159,6 +159,13 @@ export class SidebarComponent {
       items: [
         { label: 'Kuponlar',      icon: 'pi-ticket',     route: '/admin/coupons' },
       ]
+    },
+    {
+      title: 'Güvenlik & Sistem',
+      items: [
+        { label: 'İşlem Kaydı',   icon: 'pi-history',    route: '/admin/audit-log' },
+        { label: 'Yedekler',      icon: 'pi-database',   route: '/admin/backups' },
+      ]
     }
   ];
 
@@ -178,6 +185,7 @@ export class SidebarComponent {
     title: 'Yönetim',
     items: [
       { label: 'Kasiyerler',   icon: 'pi-users',     route: '/store/cashiers'  },
+      { label: 'İşlem Kaydı',  icon: 'pi-history',   route: '/store/audit-log' },
     ]
   }
 ];

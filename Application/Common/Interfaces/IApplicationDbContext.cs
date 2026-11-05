@@ -1,4 +1,4 @@
-using Domain.Entities;
+﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -33,6 +33,8 @@ public interface IApplicationDbContext
     DbSet<CashDrawerSession> CashDrawerSessions { get; }
     DbSet<Coupon> Coupons { get; }
     DbSet<ZReport> ZReports { get; }
+    DbSet<AuditLog> AuditLogs { get; }
+    DbSet<BackupRecord> BackupRecords { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     DbSet<CodeSequence> CodeSequences { get; }

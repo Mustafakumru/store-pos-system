@@ -115,6 +115,20 @@ export const routes: Routes = [
           import('./features/users/user-list.component')
             .then(m => m.UserListComponent)
       },
+
+      // İşlem kaydı ve yedekler
+      {
+        path: 'audit-log',
+        loadComponent: () =>
+          import('./features/audit/audit-log.component')
+            .then(m => m.AuditLogComponent)
+      },
+      {
+        path: 'backups',
+        loadComponent: () =>
+          import('./features/backups/backup.component')
+            .then(m => m.BackupComponent)
+      },
     ]
   },
 
@@ -169,6 +183,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/store-panel/store-cash-sessions.component')
             .then(m => m.StoreCashSessionsComponent)
+      },
+      {
+        path: 'audit-log',
+        loadComponent: () =>
+          import('./features/audit/audit-log.component')
+            .then(m => m.AuditLogComponent)
       },
     ]
   },

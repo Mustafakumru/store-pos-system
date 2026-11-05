@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Domain.Entities;
 using Infrastructure.Identity;
 using Infrastructure.Persistence.Interceptors;
@@ -56,6 +56,8 @@ public class ApplicationDbContext
     public DbSet<ReceiptSequence> ReceiptSequences => Set<ReceiptSequence>();
     public DbSet<CodeSequence> CodeSequences => Set<CodeSequence>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<BackupRecord> BackupRecords => Set<BackupRecord>();
     public DbSet<ProductVariantGroup> ProductVariantGroups => Set<ProductVariantGroup>();
     public DbSet<ProductVariantGroupImage> ProductVariantGroupImages => Set<ProductVariantGroupImage>();
 

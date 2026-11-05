@@ -93,3 +93,50 @@ dotnet ef database update --project Infrastructure --startup-project WebAPI
 ```
 
 Production'da ayrıca: HTTPS zorunlu (HSTS açık), Swagger kapalı, hata yanıtlarında iç ayrıntı yok.
+
+## İşlem kaydı
+
+Panel: **Güvenlik & Sistem → İşlem Kaydı** (Admin tüm mağazalar, mağaza müdürü kendi mağazası; kasiyer erişemez).
+API: `GET /api/audit-logs?from=&to=&storeId=&user=&action=&entityId=&succeeded=&page=&pageSize=`
+
+- **İstek kaydı** (`WebAPI/Middleware/AuditMiddleware.cs`): sisteme yazan her istek (POST/PUT/PATCH/DELETE) —
+  satış, iade, değişim, yönetici onayı, giriş denemesi, kullanıcı/ürün/kupon işlemleri, fiş yeniden basımı —
+  kim (personel no, ad, rol), hangi mağaza, ne zaman, sonuç (başarılı / reddedildi + sunucu mesajı), fiş/belge no,
+  IP ve süreyle yazılır. Reddedilen denemeler de kaydedilir.
+- **Alan değişikliği kaydı** (`AuditableEntityInterceptor`): ürün, varyant, kategori, kupon, mağaza, iade nedeni,
+  müşteri, kullanıcı ve min. stok değişikliklerinde alanın eski → yeni değeri; değişiklikle aynı işlemde yazılır
+  ve isteğe `CorrelationId` ile bağlanır.
+- **Gizlilik:** PIN, şifre, token ve hash değerleri hiç yazılmaz (`***` / `(değişti)`); kart numarası son 4 hane,
+  müşteri telefonu son 2 hane, müşteri e-postası maskelenir (`AuditSanitizer`).
+- **Değiştirilemez:** `AuditLogs` tablosundaki `TR_AuditLogs_AppendOnly` tetikleyicisi doğrudan SQL ile yapılan
+  UPDATE/DELETE'i de reddeder.
+
+## Yedekleme
+
+Panel: **Güvenlik & Sistem → Yedekler** (yalnızca Admin) — son başarılı yedek, sonraki planlı yedek, geçmiş,
+"Şimdi yedekle". Son 26 saatte başarılı yedek yoksa kırmızı uyarı gösterilir.
+
+| Ayar | Varsayılan | Açıklama |
+|---|---|---|
+| `Backup:Enabled` | `false` | Günlük otomatik yedek. Canlıda **açın**. |
+| `Backup:Directory` | SQL Server varsayılanı | **SQL Server'ın gördüğü** klasör; veritabanından ayrı bir diskte olmalı |
+| `Backup:DailyAt` | `02:30` | Sunucu yerel saati |
+| `Backup:RetentionDays` / `MinKeep` | `30` / `7` | Bu süreden eski yedekler silinir; en yeni `MinKeep` adet hiç silinmez |
+
+Her yedek `BACKUP ... WITH CHECKSUM` ile alınır ve hemen `RESTORE VERIFYONLY` ile doğrulanır. Sunucu planlı
+saatte kapalıysa açılışta (son başarılı yedek 24 saatten eskiyse) telafi yedeği alınır. Yedekler aynı sunucuda
+kalırsa disk arızasında birlikte kaybolur: klasörü düzenli olarak başka bir makineye/buluta kopyalayın.
+
+### Yedekten geri dönme
+
+```bash
+# 1) API'yi durdurun (kasa işlemleri dursun)
+# 2) Mevcut durumun da yedeğini alın (geri dönüşün geri alınabilmesi için)
+sqlcmd -S <sunucu> -Q "BACKUP DATABASE LCWaikikiPOS TO DISK='D:\Yedek\LCWaikikiPOS_geri-donus-oncesi.bak' WITH CHECKSUM"
+# 3) Geri yükleyin
+sqlcmd -S <sunucu> -Q "ALTER DATABASE LCWaikikiPOS SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE LCWaikikiPOS FROM DISK='D:\Yedek\LCWaikikiPOS_<tarih>.bak' WITH REPLACE, CHECKSUM; ALTER DATABASE LCWaikikiPOS SET MULTI_USER"
+# 4) API'yi başlatın; yedek eski bir sürümdense bekleyen migration'lar listelenir (bkz. Production'a çıkış)
+```
+
+Geri yüklenebilirlik testlerde de doğrulanır: `AuditAndBackupTests` yedeği ayrı bir veritabanına açıp satış
+sayısını karşılaştırır.
