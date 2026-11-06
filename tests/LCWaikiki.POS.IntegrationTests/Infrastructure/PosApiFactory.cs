@@ -61,6 +61,8 @@ public class PosApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("RateLimiting:PerIpPerMinute", PerIpRateLimit.ToString());
         // Yedek testleri: klasör SQL Server'ın gördüğü yol (CI: Linux konteyner)
         builder.UseSetting("Backup:Directory", BackupDirectory);
+        // Demo verisi testlerde üretilmez (hızlı ve deterministik testler)
+        builder.UseSetting("Seed:DemoData", "false");
     }
 
     public Task InitializeAsync()

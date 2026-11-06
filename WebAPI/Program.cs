@@ -161,6 +161,11 @@ using (var scope = app.Services.CreateScope())
 
     // Urun kodu sistemi: kodsuz kategori/urunleri tamamlar (idempotent)
     await Infrastructure.Persistence.ProductCatalogBackfill.RunAsync(app.Services);
+
+    // Demo verisi: SADECE geliştirmede ve Seed:DemoData=true ise, bir kez (bkz. DemoDataSeeder)
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Seed:DemoData"))
+        await Infrastructure.Persistence.DemoDataSeeder.RunAsync(app.Services,
+            app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DemoData"));
 }
 
 // ─────────────────────────────────────────────

@@ -63,11 +63,18 @@ public class GetSalesPerformanceQueryHandler : IRequestHandler<GetSalesPerforman
 
         var (fromUtc, _) = BusinessClock.DayRangeUtc(from);
         var (_, toUtc) = BusinessClock.DayRangeUtc(to);
+        // Önceki dönem: AYNI UZUNLUKTA, dönemin bugüne kadar geçen kısmı kadar. "Bu ay" (6. gün)
+        // önceki 30 günle değil, önceki dönemin ilk 6 günüyle karşılaştırılır (yoksa −%77 gibi
+        // yanıltıcı düşüş görünüyordu).
+        var comparedDays = Math.Max(1, elapsed == 0 ? days : elapsed);
         var (prevFromUtc, _) = BusinessClock.DayRangeUtc(from.AddDays(-days));
+        var (_, prevToUtc) = BusinessClock.DayRangeUtc(from.AddDays(-days + comparedDays - 1));
+        var (_, currentComparableToUtc) = BusinessClock.DayRangeUtc(from.AddDays(comparedDays - 1));
 
         // ── Mağaza bazında satış / iade (dönem + önceki eşit dönem) ──────────
         var current = await AggregateAsync(fromUtc, toUtc, ct);
-        var previous = await AggregateAsync(prevFromUtc, fromUtc, ct);
+        var previous = await AggregateAsync(prevFromUtc, prevToUtc, ct);
+        var currentComparable = elapsed > 0 && elapsed < days ? await AggregateAsync(fromUtc, currentComparableToUtc, ct) : current;
 
         var stores = await _db.Stores.AsNoTracking().IgnoreQueryFilters()
             .Where(s => !s.IsDeleted)
@@ -122,7 +129,7 @@ public class GetSalesPerformanceQueryHandler : IRequestHandler<GetSalesPerforman
                 r.c.Net, r.c.Sales, r.c.Refunds, r.c.SaleCount, r.c.Items,
                 r.c.SaleCount > 0 ? Math.Round(r.c.Sales / r.c.SaleCount, 2) : 0,
                 r.target, r.achievement, r.expected, r.Pace, r.Remaining,
-                r.p.Net, Change(r.c.Net, r.p.Net),
+                r.p.Net, Change((currentComparable.GetValueOrDefault(r.s.Id) ?? StoreAgg.Empty).Net, r.p.Net),
                 totalNet != 0 ? Math.Round(r.c.Net / totalNet * 100, 1) : 0))
             .ToList();
 
@@ -138,7 +145,7 @@ public class GetSalesPerformanceQueryHandler : IRequestHandler<GetSalesPerforman
             saleCount > 0 ? Math.Round(salesAmount / saleCount, 2) : 0,
             totalTarget,
             totalTarget is > 0 ? Math.Round(withTarget.Sum(r => r.NetRevenue) / totalTarget.Value * 100, 1) : null,
-            prevNet, Change(totalNet, prevNet));
+            prevNet, Change(currentComparable.Values.Sum(c => c.Net), prevNet));
 
         // ── Günlük seyir (yerel gün) ──────────────────────────────────────
         var saleTimes = await _db.Sales.AsNoTracking()
