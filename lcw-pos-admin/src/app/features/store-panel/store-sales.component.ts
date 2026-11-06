@@ -71,7 +71,7 @@ import { formatMoney, hourlyToBars, dailyToBars, downloadCsv } from '../../share
           @if (summary.cashRefundTotal) {
             <p class="text-xs text-gray-400 mt-1">
               Nakit iade −{{ summary.cashRefundTotal | currency:'TRY':'symbol':'1.0-0' }} ·
-              net {{ summary.cashTotal - (summary.cashRefundTotal ?? 0) | currency:'TRY':'symbol':'1.0-0' }}
+              net {{ summary.cashTotal - summary.cashRefundTotal | currency:'TRY':'symbol':'1.0-0' }}
             </p>
           }
         </div>

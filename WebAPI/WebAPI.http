@@ -1,6 +1,19 @@
-@WebAPI_HostAddress = http://localhost:5241
+@WebAPI_HostAddress = https://localhost:7164
 
-GET {{WebAPI_HostAddress}}/weatherforecast/
-Accept: application/json
+### Sağlık kontrolü (kimlik gerektirmez)
+GET {{WebAPI_HostAddress}}/api/health
 
-###
+### Panel girişi (geliştirme seed'i)
+# @name login
+POST {{WebAPI_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@lcwaikiki.com", "password": "Admin123!" }
+
+### Bu ayın satış performansı (Admin)
+GET {{WebAPI_HostAddress}}/api/sales-performance?from=2026-11-01&to=2026-11-30
+Authorization: Bearer {{login.response.body.token}}
+
+### İşlem kaydı (Admin)
+GET {{WebAPI_HostAddress}}/api/audit-logs?pageSize=20
+Authorization: Bearer {{login.response.body.token}}
