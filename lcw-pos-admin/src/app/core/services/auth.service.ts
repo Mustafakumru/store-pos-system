@@ -120,11 +120,21 @@ export class AuthService {
       .pipe(tap(res => { if (res?.token) this.setToken(res.token); }));
   }
 
-  // decodeToken metodunu güncelle:
+  /**
+   * JWT gövdesi base64url + UTF-8'dir. Eskiden düz atob() kullanılıyordu:
+   * Türkçe karakterli adlar bozuk görünüyordu ("Müdür" -> "MÃ¼dÃ¼r") ve
+   * '-' / '_' içeren token'larda çözme tamamen başarısız olabiliyordu.
+   */
+  private static decodeJwtPart(part: string): string {
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '=');
+    const binary = atob(b64);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }
 
 private decodeToken(token: string): TokenPayload | null {
   try {
-    const raw = JSON.parse(atob(token.split('.')[1]));
+    const raw = JSON.parse(AuthService.decodeJwtPart(token.split('.')[1]));
 
     // ASP.NET Core ClaimTypes tam URI ile yazıyor
     // Her iki format da destekleniyor

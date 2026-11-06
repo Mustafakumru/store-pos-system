@@ -89,6 +89,15 @@ public partial class LoginViewModel : BaseViewModel
         PinDisplay = string.Empty;
     }
 
+    /// <summary>Sunucudaki PinSecurity.ValidateNewPin ile ayni kural: tek rakam tekrari ya da ardisik.</summary>
+    public static bool IsGuessablePin(string pin)
+    {
+        if (pin.Length < 2) return false;
+        if (pin.Distinct().Count() == 1) return true;
+        bool Sequential(int step) => Enumerable.Range(1, pin.Length - 1).All(i => pin[i] - pin[i - 1] == step);
+        return Sequential(1) || Sequential(-1);
+    }
+
     private async Task ContinueChangePinAsync()
     {
         if (Pin.Length is < 4 or > 6)
@@ -99,6 +108,15 @@ public partial class LoginViewModel : BaseViewModel
 
         if (_firstNewPin is null)
         {
+            // Sunucunun da uyguladigi kural: tahmin edilebilir PIN'i ilk adimda reddet
+            // (eskiden kasiyer 1234'u iki kez yaziyor, ancak sonra hata goruyordu)
+            if (IsGuessablePin(Pin))
+            {
+                SetError("Bu PIN tahmin edilebilir (1111, 1234, 4321 gibi). Baska bir PIN secin.");
+                Pin = string.Empty;
+                PinDisplay = string.Empty;
+                return;
+            }
             // 1. adim tamam -> tekrar iste
             _firstNewPin = Pin;
             PinPrompt = "Yeni PIN (tekrar)";
