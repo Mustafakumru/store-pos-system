@@ -131,6 +131,7 @@ export class SidebarComponent {
       title: 'Genel',
       items: [
         { label: 'Dashboard',     icon: 'pi-home',       route: '/admin/dashboard', exact: true },
+        { label: 'Satış Performansı', icon: 'pi-chart-line', route: '/admin/sales-performance' },
       ]
     },
     {

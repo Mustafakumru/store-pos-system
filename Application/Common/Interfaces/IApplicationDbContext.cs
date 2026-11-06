@@ -34,6 +34,7 @@ public interface IApplicationDbContext
     DbSet<Coupon> Coupons { get; }
     DbSet<ZReport> ZReports { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<StoreSalesTarget> StoreSalesTargets { get; }
     DbSet<BackupRecord> BackupRecords { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

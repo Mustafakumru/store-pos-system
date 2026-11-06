@@ -76,6 +76,14 @@ export const routes: Routes = [
             .then(m => m.ProductFormComponent)
       },
 
+      // Satış performansı ve hedefler
+      {
+        path: 'sales-performance',
+        loadComponent: () =>
+          import('./features/reports/sales-performance.component')
+            .then(m => m.SalesPerformanceComponent)
+      },
+
       // Kategoriler
       {
         path: 'categories',

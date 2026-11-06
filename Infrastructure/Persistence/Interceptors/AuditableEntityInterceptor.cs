@@ -88,6 +88,7 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
         ["Coupon"] = new() { "UsedCount", "RowVersion" },
         ["Store"] = new(),
         ["ReturnReason"] = new(),
+        ["StoreSalesTarget"] = new(),   // hedef değişikliği: eski -> yeni tutar
         ["Customer"] = new(),
         ["StoreInventory"] = new() { "Quantity", "RowVersion" },   // sadece min. stok gibi ayarlar
         ["AppUser"] = new() { "AccessFailedCount", "SecurityStamp", "ConcurrencyStamp" }

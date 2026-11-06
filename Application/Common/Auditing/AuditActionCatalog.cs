@@ -58,6 +58,7 @@ public static class AuditActionCatalog
         ["Stores.UpdateMinStock"] = "Minimum stok değiştirme",
         ["Coupons.Create"] = "Kupon oluşturma",
         ["Coupons.SetActive"] = "Kupon aktif/pasif",
+        ["SalesPerformance.SetTarget"] = "Satış hedefi belirleme",
 
         // Sistem
         ["Backups.Run"] = "Elle yedek alma",
@@ -68,7 +69,7 @@ public static class AuditActionCatalog
     {
         ["Product"] = "Ürün", ["ProductVariant"] = "Varyant", ["ProductVariantGroup"] = "Renk grubu",
         ["Category"] = "Kategori", ["Coupon"] = "Kupon", ["Store"] = "Mağaza", ["ReturnReason"] = "İade nedeni",
-        ["Customer"] = "Müşteri", ["AppUser"] = "Kullanıcı", ["StoreInventory"] = "Mağaza stoğu"
+        ["Customer"] = "Müşteri", ["StoreSalesTarget"] = "Satış hedefi", ["AppUser"] = "Kullanıcı", ["StoreInventory"] = "Mağaza stoğu"
     };
 
     public static string Label(string action)

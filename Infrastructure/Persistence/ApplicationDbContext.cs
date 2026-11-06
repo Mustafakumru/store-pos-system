@@ -57,6 +57,7 @@ public class ApplicationDbContext
     public DbSet<CodeSequence> CodeSequences => Set<CodeSequence>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<StoreSalesTarget> StoreSalesTargets => Set<StoreSalesTarget>();
     public DbSet<BackupRecord> BackupRecords => Set<BackupRecord>();
     public DbSet<ProductVariantGroup> ProductVariantGroups => Set<ProductVariantGroup>();
     public DbSet<ProductVariantGroupImage> ProductVariantGroupImages => Set<ProductVariantGroupImage>();

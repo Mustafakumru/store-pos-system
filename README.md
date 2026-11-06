@@ -119,6 +119,22 @@ Sunucuya ulaşılamadığında kasa satışa devam eder; bağlantı gelince sat�
 - **Sınır:** Kasa uygulaması sunucu yokken yeniden açılırsa giriş yapılamaz (PIN sunucuda doğrulanır); çevrimdışı satış,
   açık oturumla çalışırken bağlantı koptuğunda devreye girer.
 
+## Satış performansı ve hedefler
+
+Panel: **Genel → Satış Performansı** (yalnızca Admin); özet kart admin panosunda.
+
+- **Net ciro** = dönemde kesilen fişler − dönemde yapılan iadeler (işlemi yapan mağazaya); mağaza paneli ve
+  X/Z raporuyla aynı tanım. Hediye kartı satışı emanettir, ciroya girmez.
+- **Dönem:** Bugün / Bu hafta / Bu ay / Geçen ay / özel aralık (en fazla 366 gün, yerel iş günü).
+- **Hedef:** mağaza başına aylık net ciro hedefi ("Hedefleri Düzenle", önceki ayı kopyalama). Dönem ayın
+  tamamı değilse gün sayısına göre orantılanır; dönemin bir ayında hedef yoksa o mağazada oran gösterilmez.
+- **Tempo:** olması gereken ilerleme = geçen gün / dönemdeki gün. Gerçekleşme bunun 5 puan üstündeyse
+  "Önde", altındaysa "Geride", arasında "Hedefte"; %100 ve üstü "Hedef tamam".
+- **Sıralama:** hedefe ulaşma oranı, sonra net ciro (sütun başlıklarıyla değiştirilebilir); ciro payı,
+  ortalama sepet, önceki eşit döneme göre değişim, günlük net ciro grafiği, en çok satan 10 ürün.
+- API: `GET /api/sales-performance?from=yyyy-MM-dd&to=yyyy-MM-dd`, `GET/PUT /api/sales-targets`.
+  Hedef değişiklikleri işlem kaydına (eski → yeni) yazılır.
+
 ## Fiş yazıcısı (termal)
 
 Her belge (satış, iade/değişim, hediye kartı, kopya) önce PDF olarak kaydedilir

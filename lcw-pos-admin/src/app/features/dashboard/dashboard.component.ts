@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { StoreService } from '../../core/services/store.service';
 import { WarehouseService } from '../../core/services/warehouse.service';
 import { StockTransferService } from '../../core/services/stock-transfer.service';
+import { PerformanceService, ymd } from '../../core/services/performance.service';
+import { SalesPerformance } from '../../shared/models/performance.model';
 import { AuthService } from '../../core/services/auth.service';
 import { StockAlert, Store } from '../../shared/models/store.model';
 import { WarehouseStock } from '../../shared/models/warehouse.model';
@@ -45,6 +47,46 @@ import { MessageService } from 'primeng/api';
           <i class="pi pi-chart-bar text-white text-2xl"></i>
         </div>
       </div>
+
+      <!-- ── Bu ay: ciro ve hedef ─────────────────────────────── -->
+      @if (month(); as m) {
+        <a routerLink="/admin/sales-performance"
+           class="block bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:border-red-200 transition-colors no-underline">
+          <div class="flex items-center gap-8 flex-wrap">
+            <div>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Bu ay net ciro</p>
+              <p class="text-3xl font-bold text-gray-800 mt-1">{{ money(m.totals.netRevenue) }}</p>
+              <p class="text-xs text-gray-400 mt-1">{{ m.totals.saleCount }} satış · bugün {{ money(todayRevenue()) }}</p>
+            </div>
+            <div class="flex-1 min-w-64">
+              @if (m.totals.achievementPercent !== null) {
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Hedef gerçekleşme <b class="text-gray-800">%{{ m.totals.achievementPercent }}</b></span>
+                  <span>Hedef {{ money(m.totals.targetAmount!) }} · olması gereken %{{ expectedPct(m) }}</span>
+                </div>
+                <div class="relative h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full bg-red-500" [style.width.%]="min(m.totals.achievementPercent, 100)"></div>
+                  <div class="absolute top-0 h-full w-0.5 bg-gray-700" [style.left.%]="expectedPct(m)"></div>
+                </div>
+              } @else {
+                <p class="text-sm text-gray-400">Bu ay için hedef girilmemiş — Satış Performansı > Hedefleri Düzenle</p>
+              }
+            </div>
+            @if (m.stores[0]; as leader) {
+              @if (leader.netRevenue > 0) {
+                <div class="text-right">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Lider mağaza</p>
+                  <p class="text-lg font-bold text-gray-800 mt-1">🥇 {{ leader.storeName }}</p>
+                  <p class="text-xs text-gray-400">
+                    {{ money(leader.netRevenue) }}{{ leader.achievementPercent !== null ? ' · %' + leader.achievementPercent : '' }}
+                  </p>
+                </div>
+              }
+            }
+            <i class="pi pi-chevron-right text-gray-300"></i>
+          </div>
+        </a>
+      }
 
       <!-- ── Özet Kartlar ───────────────────────────────────── -->
       <div class="grid grid-cols-4 gap-4">
@@ -295,6 +337,15 @@ export class DashboardComponent implements OnInit {
 
   today = new Date();
 
+  month = signal<SalesPerformance | null>(null);
+  todayRevenue = computed(() => {
+    const today = ymd(new Date());
+    return this.month()?.daily.find(d => d.date === today)?.netRevenue ?? 0;
+  });
+  readonly money = (v: number) => '₺' + Math.round(v).toLocaleString('tr-TR');
+  readonly min = Math.min;
+  expectedPct(m: SalesPerformance): number { return Math.round(m.elapsedDays / m.days * 1000) / 10; }
+
   get fullName()         { return this.authService.fullName; }
   get activeStoreCount() { return this.stores.filter(s => s.isActive).length; }
   get criticalAlerts()   { return this.stockAlerts.filter(a => a.alertLevel === 3); }
@@ -305,6 +356,7 @@ export class DashboardComponent implements OnInit {
     private warehouseService: WarehouseService,
     private transferService:  StockTransferService,
     private authService:      AuthService,
+    private performanceService: PerformanceService,
     private messageService:   MessageService
   ) {}
 
@@ -313,6 +365,11 @@ export class DashboardComponent implements OnInit {
   }
 
   loadAll(): void {
+    // Bu ayın ciro / hedef özeti
+    const now = new Date();
+    this.performanceService.get(new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 0))
+      .subscribe({ next: d => this.month.set(d) });
+
     // Mağazalar
     this.storeService.getAll().subscribe({
       next: data => this.stores = data

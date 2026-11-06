@@ -1862,6 +1862,50 @@ namespace Infrastructure.Migrations
                     b.ToTable("StoreInventories");
                 });
 
+            modelBuilder.Entity("Domain.Entities.StoreSalesTarget", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StoreId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TargetAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("StoreSalesTargets", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.SuspendedSale", b =>
                 {
                     b.Property<int>("Id")
@@ -2587,6 +2631,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Store");
 
                     b.Navigation("Variant");
+                });
+
+            modelBuilder.Entity("Domain.Entities.StoreSalesTarget", b =>
+                {
+                    b.HasOne("Domain.Entities.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Store");
                 });
 
             modelBuilder.Entity("Domain.Entities.SuspendedSale", b =>
