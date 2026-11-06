@@ -97,6 +97,17 @@ dotnet run --project LCWaikiki.POS.WpfClient
 Demo verisi (yalnızca geliştirmede): 4 mağaza, 12 ürün, son 60 günde ~2.800 satış, iadeler, stoklar ve
 farklı tempolarda aylık hedefler — raporlar ilk açılışta dolu görünür.
 
+### Docker ile (tek komut)
+
+```bash
+docker compose up --build      # SQL Server + API (demo verisiyle) + panel
+```
+
+Panel http://localhost:4200 · Swagger http://localhost:8080/swagger · ilk açılışta demo verisi üretimi 1-2 dakika
+sürer. Kasa uygulamasını bu API'ye bağlamak için `LCWaikiki.POS.WpfClient/appsettings.json` → `Api:BaseUrl` =
+`http://localhost:8080`. Yalnızca yerel demo içindir (geliştirme ortamı ve bilinen demo şifreleri). CI her gönderimde
+bu kurulumu ayağa kaldırıp panel üzerinden girişi ve demo verisini doğrular.
+
 ### Demo hesapları (yalnızca geliştirme ortamı)
 
 | Rol | Nerede | Giriş |

@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/.angular/
+**/dist/
+.git/
+.vs/
+docs/
+tests/
+LCWaikiki.POS.WpfClient/

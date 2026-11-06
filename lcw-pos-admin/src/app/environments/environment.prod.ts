@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.lcwaikiki.com/api' // Production URL buraya
+  // Göreli: panel ile API aynı adresten sunulur (docker compose'da nginx /api ve /images'ı API'ye yönlendirir)
+  apiUrl: '/api'
 };

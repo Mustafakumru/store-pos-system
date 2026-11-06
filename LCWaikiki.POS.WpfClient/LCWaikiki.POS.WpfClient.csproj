@@ -13,6 +13,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
     <PackageReference Include="PdfSharp" Version="6.2.4" />
+    <!-- PdfSharp dolaylı olarak 8.0.1 getiriyor (GHSA-846f-f764-76mx): yamalı sürüme sabitlendi -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
