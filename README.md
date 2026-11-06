@@ -2,209 +2,126 @@
 
 [![CI](https://github.com/Mustafakumru/store-pos-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Mustafakumru/store-pos-system/actions/workflows/ci.yml)
 
-Mağaza kasa (POS) sistemi: satış, iade/değişim, hediye kartı, kasa oturumu (avans/teslim),
-X/Z raporları, depo → mağaza sevkiyatı ve yönetim paneli.
+Perakende mağazalar için uçtan uca kasa (POS) sistemi: **WPF kasa uygulaması**, **ASP.NET Core API** ve
+**Angular yönetim/mağaza paneli**. Satış, iade/değişim, hediye kartı, kasa açılış/kapanış, X/Z raporu,
+depo → mağaza sevkiyatı, çevrimdışı satış, termal fiş yazıcısı, satış hedefleri ve değiştirilemez işlem kaydı.
 
-LC Waikiki'de kasiyer olarak çalıştığım dönemde gözlemlediğim mağaza süreçlerinden (iade,
-değişim, kasa teslimi, Z raporu) esinlenerek geliştirdiğim kişisel bir projedir; şirketin
-resmi yazılımı değildir ve şirkete ait kod ya da veri içermez.
+> LC Waikiki'de kasiyer olarak çalıştığım dönemde gözlemlediğim mağaza süreçlerinden (iade, değişim, kasa
+> teslimi, Z raporu) esinlenerek geliştirdiğim kişisel bir projedir; şirketin resmi yazılımı değildir ve
+> şirkete ait kod ya da veri içermez.
+
+| Kasa uygulaması (WPF) | Yönetim paneli (Angular) |
+|---|---|
+| ![Fiş ekranı](docs/images/kasa-fis-ekrani.png) | ![Satış performansı](docs/images/panel-satis-performansi.jpg) |
+| ![Ödeme](docs/images/kasa-odeme.png) | ![İşlem kaydı](docs/images/panel-islem-kaydi.jpg) |
+
+<details>
+<summary><b>Diğer ekranlar</b> (ürün bulma, kasa açılışı, mağaza paneli, termal fiş…)</summary>
+
+| | |
+|---|---|
+| ![Ürün bul](docs/images/kasa-urun-bul.png) Barkodsuz ürün bulma: ürün kodu → renk → beden | ![Kasa açılışı](docs/images/kasa-acilis-mudur-onayi.png) Müdür onaylı kasa açılışı |
+| ![Mağaza paneli](docs/images/magaza-paneli.jpg) Mağaza müdürü paneli | ![Mağaza satışları](docs/images/magaza-satislar.jpg) Satış geçmişi ve kasiyer performansı |
+| ![Pano](docs/images/panel-pano.jpg) Admin panosu: bu ay ciro / hedef | ![Ürünler](docs/images/panel-urunler.jpg) Ürün kodu sistemi (W6ER03Z8) |
+| ![Ana menü](docs/images/kasa-ana-menu.png) Kasa ana menüsü | ![Termal fiş](docs/images/fis-termal-80mm.png) ESC/POS ile basılan 80 mm fiş (yazıcıya giden baytlardan geri çözülmüş) |
+
+</details>
+
+## Öne çıkanlar
+
+- **Para ve stok hareketlerinde eşzamanlılık güvenliği** — aynı fişe aynı anda iki iade, aynı hediye kartıyla iki
+  kasada harcama, aynı ürünün 15 kasada aynı anda satışı: rowversion + otomatik yeniden deneme ile hiçbiri
+  bakiyeyi/stoğu bozamaz (testlerle kanıtlı).
+- **Tekrar gönderim koruması (`Idempotency-Key`)** — ağ koptuğunda tekrar basılan "Ödeme" ikinci fiş kesmez,
+  ilk yanıt döner.
+- **Çevrimdışı satış** — sunucu yokken kasa yerel katalogla satışa devam eder; bağlantı gelince satışlar aynı
+  işlem anahtarıyla gönderilir, satış anındaki fiyat sunucuda doğrulanır.
+- **Değiştirilemez işlem kaydı** — kim, hangi mağazada, ne zaman, ne yaptı; PIN/şifre/kart no maskeli;
+  veritabanı tetikleyicisi doğrudan SQL ile silmeyi de reddeder.
+- **Satış performansı ve hedefler** — mağaza sıralaması, aylık hedef, "olması gereken" ilerlemeye göre
+  Önde/Hedefte/Geride.
+- **Termal fiş** — fiş 203 dpi raster olarak ESC/POS ile basılır (Türkçe karakter sorunu yok), PDF arşivi.
+- **Ürün kodu sistemi** — 8 haneli model kodu (sezon + yıl + kategori + sıra + yaş grubu) ve EAN-13 barkod üretimi.
+- **Güvenlik** — PBKDF2 PIN, kilitleme, istek sınırı, tek kullanımlık yönetici onay token'ı, oturum süresi dolunca
+  sepet kaybolmadan PIN ile yeniden giriş, canlıda hatalı yapılandırmayla açılmayan API.
+- **174 otomatik test** — gerçek SQL Server üzerinde entegrasyon testleri + sunucusuz kasa uygulaması testleri; CI.
+
+Tasarım kararlarının "sorun → çözüm → nasıl test edildi" anlatımı: **[docs/teknik-kararlar.md](docs/teknik-kararlar.md)**
+
+## Mimari
+
+```mermaid
+flowchart LR
+    subgraph Mağaza
+        WPF["Kasa uygulaması<br/>WPF .NET 8 · MVVM"]
+        PRN["Termal yazıcı<br/>ESC/POS"]
+        Q[("Çevrimdışı kuyruk<br/>+ yerel katalog")]
+    end
+    subgraph Merkez
+        API["ASP.NET Core 8 API<br/>Clean Architecture · CQRS (MediatR)"]
+        DB[("SQL Server<br/>EF Core 8")]
+        BK[("Doğrulanmış<br/>yedekler")]
+    end
+    PANEL["Yönetim / mağaza paneli<br/>Angular 17 · PrimeNG"]
+
+    WPF -- "JWT · Idempotency-Key" --> API
+    WPF --- PRN
+    WPF --- Q
+    PANEL -- JWT --> API
+    API --> DB
+    API -- "günlük BACKUP + VERIFYONLY" --> BK
+```
 
 | Bileşen | Teknoloji | Klasör |
 |---|---|---|
-| API | ASP.NET Core 8, Clean Architecture, MediatR (CQRS), EF Core 8, SQL Server | `Domain`, `Application`, `Infrastructure`, `WebAPI` |
-| Yönetim / mağaza paneli | Angular 17, PrimeNG, Tailwind | `lcw-pos-admin` |
-| Kasa uygulaması | WPF (.NET 8), CommunityToolkit.Mvvm | `LCWaikiki.POS.WpfClient` |
-| Testler | xUnit, WebApplicationFactory, gerçek SQL Server | `tests/LCWaikiki.POS.IntegrationTests` |
+| API | ASP.NET Core 8, Clean Architecture (Domain / Application / Infrastructure / WebAPI), MediatR, FluentValidation, EF Core 8, SQL Server, JWT | `Domain`, `Application`, `Infrastructure`, `WebAPI` |
+| Yönetim / mağaza paneli | Angular 17 (standalone, signals), PrimeNG, Tailwind | `lcw-pos-admin` |
+| Kasa uygulaması | WPF (.NET 8), CommunityToolkit.Mvvm, PdfSharp | `LCWaikiki.POS.WpfClient` |
+| Testler | xUnit, WebApplicationFactory, gerçek SQL Server | `tests/` |
 
-## Çalıştırma (geliştirme)
+## Çalıştırma (5 dakika)
+
+Gereksinimler: .NET 8 SDK, Node 20, SQL Server LocalDB (Visual Studio ile gelir) — kasa uygulaması için Windows.
 
 ```bash
-# API — açılışta migration + geliştirme seed'i (admin@lcwaikiki.com / Admin123!, test kasiyeri 1000001 / 1234)
+# 1) API — ilk açılışta veritabanını oluşturur, geliştirme hesaplarını ve DEMO VERİSİNİ üretir
 dotnet run --project WebAPI --launch-profile https      # https://localhost:7164/swagger
 
-# Panel
+# 2) Panel
 cd lcw-pos-admin && npm install && npx ng serve         # http://localhost:4200
 
-# Kasa uygulaması
+# 3) Kasa uygulaması (Windows)
 dotnet run --project LCWaikiki.POS.WpfClient
 ```
 
-Varsayılan veritabanı: `(localdb)\mssqllocaldb` / `LCWaikikiPOS`.
+Demo verisi (yalnızca geliştirmede): 4 mağaza, 12 ürün, son 60 günde ~2.800 satış, iadeler, stoklar ve
+farklı tempolarda aylık hedefler — raporlar ilk açılışta dolu görünür.
+
+### Demo hesapları (yalnızca geliştirme ortamı)
+
+| Rol | Nerede | Giriş |
+|---|---|---|
+| Admin | Panel | `admin@lcwaikiki.com` / `Admin123!` |
+| Mağaza müdürü (İstanbul Kanyon) | Panel | `demo.101@lcwaikiki.com` / `Demo123!` |
+| Kasiyer (İstanbul Kanyon) | Kasa | personel no `810102`, PIN `1357` |
+| Mağaza müdürü — kasa açılışı / onaylar | Kasa | personel no `810101`, PIN `4826` |
+| Diğer demo mağazalar | | `201` Ankara, `301` İzmir, `501` Antalya: aynı kalıp (`demo.201@…`, `820102` …) |
+
+Demo barkodları için panelde **Ürünler**'e bakın ya da kasada **Ürün Bul** ile ürün kodunu (örn. `W6ER03Z8`) yazın.
 
 ## Testler
 
 ```bash
-dotnet test
+dotnet test        # 132 API (gerçek SQL Server / LocalDB) + 42 kasa uygulaması testi
 ```
 
-- **Birim testleri** (`Unit/`): ödeme/para üstü, iade tutarı, telefon normalizasyonu, PIN hash ve kuralları.
-- **Canlıya hazırlık testleri** (`Api/HardeningTests.cs`): eşzamanlı hediye kartı harcaması, eşzamanlı satışlarda
-  stok tutarlılığı, `Idempotency-Key` (tekrar, eşzamanlı tekrar, hata sonrası tekrar, başka uçta kullanım),
-  adet/tutar sınırları, eşzamanlı ürün kodu üretimi. Açılış kontrolleri: `Unit/StartupGuardTests.cs`.
-- **Kasa uygulaması testleri** (`tests/LCWaikiki.POS.WpfClient.Tests`, sunucu gerektirmez): oturum süresi dolunca
-  PIN ile yeniden giriş ve aynı işlem anahtarıyla tekrar gönderim, ağ hatası/zaman aşımı mesajları ve bağlantı
-  göstergesi, ödeme ekranı (para üstü, kart üst sınırı, çift gönderim koruması), sepet satırı hesapları.
-- **Entegrasyon testleri** (`Api/`): API'nin tamamı bellek içinde çalışır (kimlik doğrulama, middleware,
-  MediatR pipeline, EF Core). Her çalıştırma **benzersiz adlı geçici bir veritabanı** oluşturur ve sonunda siler.
-  Her test kendi mağazasını/kullanıcılarını kurar; testler birbirinden bağımsızdır.
-  Eşzamanlılık senaryoları (aynı onayla çift kasa açma, aynı fişe eşzamanlı iade, eşzamanlı satışlarda
-  fiş numarası) gerçek SQL Server üzerinde sınanır — kod MERGE, rowversion ve filtreli unique index
-  kullandığı için SQLite/InMemory yeterli değildir.
+Eşzamanlılık, tekrar gönderim, çevrimdışı satış, yedekten geri dönüş, işlem kaydının değiştirilemezliği,
+yetki sınırları ve ESC/POS çıktısı test edilir. Ayrıntı: [docs/testler.md](docs/testler.md) · CI:
+[docs/yapilandirma.md](docs/yapilandirma.md#ci-github-actions)
 
-SQL Server adresi `POS_TEST_SQL` ortam değişkeniyle değiştirilebilir (varsayılan LocalDB):
+## Belgeler
 
-```bash
-POS_TEST_SQL="localhost,1433;User Id=sa;Password=<şifre>" dotnet test
-```
-
-## CI (GitHub Actions)
-
-`.github/workflows/ci.yml` — her `main` push'unda ve pull request'te üç paralel iş:
-
-| İş | Runner | Ne yapar |
-|---|---|---|
-| API testleri | ubuntu-latest + SQL Server 2022 servis konteyneri | Birim + entegrasyon testlerinin tamamı; sonuçlar (`.trx`) artifact olarak yüklenir |
-| Kasa uygulaması (WPF) | windows-latest | WPF projesini Release derler + kasa uygulaması testleri |
-| Yönetim paneli | ubuntu-latest, Node 20 | `npm ci` + Angular production derlemesi |
-
-## Yapılandırma ve gizli bilgiler
-
-| Ayar | Geliştirme | Production |
-|---|---|---|
-| `JwtSettings:SecretKey` (≥ 32 bayt) | `appsettings.Development.json` | `JwtSettings__SecretKey` ortam değişkeni / anahtar kasası — **tanımsız, kısa ya da depodaki geliştirme anahtarıysa API açılmaz** |
-| `Seed:AdminPassword` | gerekmez (`Admin123!`) | ilk admin için zorunlu; test mağazası/kasiyeri oluşturulmaz |
-| `RateLimiting:PerUserPerMinute` / `PerIpPerMinute` | 20 / 120 | 20 / 120 |
-| `AllowedOrigins` (panel adresi, CORS) | `http(s)://localhost:4200` | `AllowedOrigins__0=https://panel...` — **boş, `*` ya da `http://` ise API açılmaz** |
-| `Database:AutoMigrate` | açık (varsayılan) | kapalı (varsayılan) — bekleyen migration varsa API açılmaz |
-| `AllowedHosts` | `*` | API'nin alan adı |
-
-Örnek production ayarları: `WebAPI/appsettings.Production.example.json` (gerçek değerler dosyaya değil ortam değişkenine yazılır; `appsettings.Production.json` git'e girmez).
-
-### Production'a çıkış (veritabanı)
-
-Şema değişiklikleri API açılışında kendiliğinden uygulanmaz: önce yedek alınır, sonra tek noktadan uygulanır.
-
-```bash
-# 1) Yedek (SQL Server)
-sqlcmd -S <sunucu> -Q "BACKUP DATABASE LCWaikikiPOS TO DISK='C:\Yedek\LCWaikikiPOS_<tarih>.bak'"
-# 2) Migration'ları uygula (ya da: dotnet ef migrations bundle ile tek dosya üretip sunucuda çalıştır)
-dotnet ef database update --project Infrastructure --startup-project WebAPI
-# 3) API'yi başlat
-```
-
-Production'da ayrıca: HTTPS zorunlu (HSTS açık), Swagger kapalı, hata yanıtlarında iç ayrıntı yok.
-
-## Çevrimdışı satış
-
-Sunucuya ulaşılamadığında kasa satışa devam eder; bağlantı gelince satışlar otomatik gönderilir.
-
-- **Ürün okutma:** Kasa, mağazanın ürün/fiyat listesini (`GET /api/pos/offline-catalog`) girişte ve 30 dakikada bir
-  `%ProgramData%\LCWaikiki\WPOS\Offline\catalog` altına indirir. Sunucu yanıt vermezse barkod buradan okunur
-  (stok bilinmez; satış stoğu eksiye düşürebilir — çevrimiçi satıştaki gibi uyarıyla kaydedilir).
-- **Satış:** Ödeme gönderilemezse satış `Offline\pending` altına yazılır, fişe 18 haneli çevrimdışı belge no basılır
-  (`9` + mağaza + yyMMdd + kasa no + sıra). Kuyruk, ilk denemenin `Idempotency-Key`'ini kullanır: istek aslında
-  sunucuya ulaşmışsa gönderimde aynı fiş döner, çift satış olmaz. Sunucu ayrıca `(StoreId, OfflineReference)`
-  tekil index'iyle aynı belgeyi ikinci kez kaydetmez.
-- **Çevrimdışıyken yapılamayanlar** (sunucu onayı gerekir): kupon, hediye kartı, indirim, değişim/iade.
-- **Gönderim:** 20 sn'de bir, en eski satış önce, yalnızca o satışı yapan kasiyerin oturumuyla. Ağ hatası / oturum süresi
-  dolması / sunucu meşgulse durur ve sonra tekrar dener (arka planda PIN penceresi açmaz). Sunucu kuralı reddederse
-  satış `Offlineailed`'a taşınır; **Ana Menü → Çevrimdışı Satışlar**'da "Tekrar dene" ya da müdür onayıyla "Arşivle".
-- **Fiyat:** Sunucu satışın kasada yapıldığı andaki fiyatı esas alır. Kasanın kataloğu eskiyse, uygulanan fiyat satıştan
-  önceki 48 saatte geçerli olmuş bir fiyatsa kabul edilir; hiç geçerli olmamış fiyat reddedilir. 7 günden eski satış
-  otomatik kaydedilmez.
-- **Gün sonu:** Gönderilmemiş ya da reddedilmiş çevrimdışı satış varken kasa kapanışı ve Z raporu yapılamaz.
-- **İade:** Müşterinin fişindeki çevrimdışı belge no ile de fiş bulunur, iade/değişim yapılır.
-- **Ayarlar** (kasa `appsettings.json` → `Offline`): `Enabled`, `TerminalNo` (aynı mağazada her kasada farklı; 0 = makine
-  adından), `CatalogRefreshMinutes`, `SyncIntervalSeconds`.
-- **Sınır:** Kasa uygulaması sunucu yokken yeniden açılırsa giriş yapılamaz (PIN sunucuda doğrulanır); çevrimdışı satış,
-  açık oturumla çalışırken bağlantı koptuğunda devreye girer.
-
-## Satış performansı ve hedefler
-
-Panel: **Genel → Satış Performansı** (yalnızca Admin); özet kart admin panosunda.
-
-- **Net ciro** = dönemde kesilen fişler − dönemde yapılan iadeler (işlemi yapan mağazaya); mağaza paneli ve
-  X/Z raporuyla aynı tanım. Hediye kartı satışı emanettir, ciroya girmez.
-- **Dönem:** Bugün / Bu hafta / Bu ay / Geçen ay / özel aralık (en fazla 366 gün, yerel iş günü).
-- **Hedef:** mağaza başına aylık net ciro hedefi ("Hedefleri Düzenle", önceki ayı kopyalama). Dönem ayın
-  tamamı değilse gün sayısına göre orantılanır; dönemin bir ayında hedef yoksa o mağazada oran gösterilmez.
-- **Tempo:** olması gereken ilerleme = geçen gün / dönemdeki gün. Gerçekleşme bunun 5 puan üstündeyse
-  "Önde", altındaysa "Geride", arasında "Hedefte"; %100 ve üstü "Hedef tamam".
-- **Sıralama:** hedefe ulaşma oranı, sonra net ciro (sütun başlıklarıyla değiştirilebilir); ciro payı,
-  ortalama sepet, önceki eşit döneme göre değişim, günlük net ciro grafiği, en çok satan 10 ürün.
-- API: `GET /api/sales-performance?from=yyyy-MM-dd&to=yyyy-MM-dd`, `GET/PUT /api/sales-targets`.
-  Hedef değişiklikleri işlem kaydına (eski → yeni) yazılır.
-
-## Fiş yazıcısı (termal)
-
-Her belge (satış, iade/değişim, hediye kartı, kopya) önce PDF olarak kaydedilir
-(`%ProgramData%\LCWaikiki\WPOS\Receipts`), yazıcı açıksa ardından basılır. Yazdırma hatası satışı bozmaz:
-loglanır, Fiş ekranında kırmızı "Yazıcı: ..." uyarısı çıkar; belge "Son Belge Tekrarı" ile yeniden basılabilir.
-
-Kasa `appsettings.json` → `Printer`:
-
-| Ayar | Varsayılan | Açıklama |
-|---|---|---|
-| `Enabled` | `false` | Açın |
-| `Name` | — | Windows'taki yazıcı adı (Ayarlar → Yazıcılar). `file:C:\yol\fis.bin` ham çıktıyı dosyaya yazar (tanılama) |
-| `Mode` | `EscPos` | `EscPos`: fiş 203 dpi siyah-beyaz resim olarak ham ESC/POS (GS v 0) gönderilir, sonra kesilir — hızlı, Türkçe karakter sorunu yok (Epson TM, Xprinter, Bixolon, Sewoo ve uyumlular). `Driver`: Windows sürücüsüyle kağıt genişliğine ölçeklenerek basılır (ESC/POS desteklemeyen yazıcılar) |
-| `PaperWidthMm` | `80` | `80` (576 nokta) ya da `58` (384 nokta); `DotsPerLine` ile elle de verilebilir |
-| `AutoCut` / `FeedLinesBeforeCut` | `true` / `4` | Kesiciden önce kağıt besleme |
-| `Threshold` | `180` | Siyah/beyaz eşiği; soluk baskıda artırın |
-| `OpenDrawerOnCashSale` | `true` | Nakit ödemede çekmece açılır (`CashDrawer:PrinterName` boşsa fiş yazıcısı kullanılır) |
-
-Kurulum: yazıcıyı üreticinin sürücüsüyle ya da "Generic / Text Only" ile Windows'a kurun, adını `Printer:Name`'e yazın.
-
-## Kategoriler
-
-Panel: **Katalog → Kategoriler** (yalnızca Admin). Ekleme (2 harfli kod addan önerilir), ad/açıklama değiştirme,
-silme. Kategori kodu ürün kodunun parçasıdır (W6**ER**01Z8): kategoride kodlu ürün oluştuktan sonra kod değiştirilemez;
-ürünü olan kategori silinemez. API: `GET /api/categories/manage`, `POST /api/categories`, `PUT /api/categories/{id}`,
-`PUT /api/categories/{id}/code`, `DELETE /api/categories/{id}`.
-
-## İşlem kaydı
-
-Panel: **Güvenlik & Sistem → İşlem Kaydı** (Admin tüm mağazalar, mağaza müdürü kendi mağazası; kasiyer erişemez).
-API: `GET /api/audit-logs?from=&to=&storeId=&user=&action=&entityId=&succeeded=&page=&pageSize=`
-
-- **İstek kaydı** (`WebAPI/Middleware/AuditMiddleware.cs`): sisteme yazan her istek (POST/PUT/PATCH/DELETE) —
-  satış, iade, değişim, yönetici onayı, giriş denemesi, kullanıcı/ürün/kupon işlemleri, fiş yeniden basımı —
-  kim (personel no, ad, rol), hangi mağaza, ne zaman, sonuç (başarılı / reddedildi + sunucu mesajı), fiş/belge no,
-  IP ve süreyle yazılır. Reddedilen denemeler de kaydedilir.
-- **Alan değişikliği kaydı** (`AuditableEntityInterceptor`): ürün, varyant, kategori, kupon, mağaza, iade nedeni,
-  müşteri, kullanıcı ve min. stok değişikliklerinde alanın eski → yeni değeri; değişiklikle aynı işlemde yazılır
-  ve isteğe `CorrelationId` ile bağlanır.
-- **Gizlilik:** PIN, şifre, token ve hash değerleri hiç yazılmaz (`***` / `(değişti)`); kart numarası son 4 hane,
-  müşteri telefonu son 2 hane, müşteri e-postası maskelenir (`AuditSanitizer`).
-- **Değiştirilemez:** `AuditLogs` tablosundaki `TR_AuditLogs_AppendOnly` tetikleyicisi doğrudan SQL ile yapılan
-  UPDATE/DELETE'i de reddeder.
-
-## Yedekleme
-
-Panel: **Güvenlik & Sistem → Yedekler** (yalnızca Admin) — son başarılı yedek, sonraki planlı yedek, geçmiş,
-"Şimdi yedekle". Son 26 saatte başarılı yedek yoksa kırmızı uyarı gösterilir.
-
-| Ayar | Varsayılan | Açıklama |
-|---|---|---|
-| `Backup:Enabled` | `false` | Günlük otomatik yedek. Canlıda **açın**. |
-| `Backup:Directory` | SQL Server varsayılanı | **SQL Server'ın gördüğü** klasör; veritabanından ayrı bir diskte olmalı |
-| `Backup:DailyAt` | `02:30` | Sunucu yerel saati |
-| `Backup:RetentionDays` / `MinKeep` | `30` / `7` | Bu süreden eski yedekler silinir; en yeni `MinKeep` adet hiç silinmez |
-
-Her yedek `BACKUP ... WITH CHECKSUM` ile alınır ve hemen `RESTORE VERIFYONLY` ile doğrulanır. Sunucu planlı
-saatte kapalıysa açılışta (son başarılı yedek 24 saatten eskiyse) telafi yedeği alınır. Yedekler aynı sunucuda
-kalırsa disk arızasında birlikte kaybolur: klasörü düzenli olarak başka bir makineye/buluta kopyalayın.
-
-### Yedekten geri dönme
-
-```bash
-# 1) API'yi durdurun (kasa işlemleri dursun)
-# 2) Mevcut durumun da yedeğini alın (geri dönüşün geri alınabilmesi için)
-sqlcmd -S <sunucu> -Q "BACKUP DATABASE LCWaikikiPOS TO DISK='D:\Yedek\LCWaikikiPOS_geri-donus-oncesi.bak' WITH CHECKSUM"
-# 3) Geri yükleyin
-sqlcmd -S <sunucu> -Q "ALTER DATABASE LCWaikikiPOS SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE LCWaikikiPOS FROM DISK='D:\Yedek\LCWaikikiPOS_<tarih>.bak' WITH REPLACE, CHECKSUM; ALTER DATABASE LCWaikikiPOS SET MULTI_USER"
-# 4) API'yi başlatın; yedek eski bir sürümdense bekleyen migration'lar listelenir (bkz. Production'a çıkış)
-```
-
-Geri yüklenebilirlik testlerde de doğrulanır: `AuditAndBackupTests` yedeği ayrı bir veritabanına açıp satış
-sayısını karşılaştırır.
+- [Teknik kararlar](docs/teknik-kararlar.md) — sorun → çözüm → test
+- [Özellikler (ayrıntılı)](docs/ozellikler.md) — çevrimdışı satış, satış performansı, termal yazıcı, kategoriler, işlem kaydı, yedekleme
+- [Yapılandırma, canlıya alma ve CI](docs/yapilandirma.md)
+- [Testler](docs/testler.md)
