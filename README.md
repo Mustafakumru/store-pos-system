@@ -119,6 +119,33 @@ Sunucuya ulaşılamadığında kasa satışa devam eder; bağlantı gelince sat�
 - **Sınır:** Kasa uygulaması sunucu yokken yeniden açılırsa giriş yapılamaz (PIN sunucuda doğrulanır); çevrimdışı satış,
   açık oturumla çalışırken bağlantı koptuğunda devreye girer.
 
+## Fiş yazıcısı (termal)
+
+Her belge (satış, iade/değişim, hediye kartı, kopya) önce PDF olarak kaydedilir
+(`%ProgramData%\LCWaikiki\WPOS\Receipts`), yazıcı açıksa ardından basılır. Yazdırma hatası satışı bozmaz:
+loglanır, Fiş ekranında kırmızı "Yazıcı: ..." uyarısı çıkar; belge "Son Belge Tekrarı" ile yeniden basılabilir.
+
+Kasa `appsettings.json` → `Printer`:
+
+| Ayar | Varsayılan | Açıklama |
+|---|---|---|
+| `Enabled` | `false` | Açın |
+| `Name` | — | Windows'taki yazıcı adı (Ayarlar → Yazıcılar). `file:C:\yol\fis.bin` ham çıktıyı dosyaya yazar (tanılama) |
+| `Mode` | `EscPos` | `EscPos`: fiş 203 dpi siyah-beyaz resim olarak ham ESC/POS (GS v 0) gönderilir, sonra kesilir — hızlı, Türkçe karakter sorunu yok (Epson TM, Xprinter, Bixolon, Sewoo ve uyumlular). `Driver`: Windows sürücüsüyle kağıt genişliğine ölçeklenerek basılır (ESC/POS desteklemeyen yazıcılar) |
+| `PaperWidthMm` | `80` | `80` (576 nokta) ya da `58` (384 nokta); `DotsPerLine` ile elle de verilebilir |
+| `AutoCut` / `FeedLinesBeforeCut` | `true` / `4` | Kesiciden önce kağıt besleme |
+| `Threshold` | `180` | Siyah/beyaz eşiği; soluk baskıda artırın |
+| `OpenDrawerOnCashSale` | `true` | Nakit ödemede çekmece açılır (`CashDrawer:PrinterName` boşsa fiş yazıcısı kullanılır) |
+
+Kurulum: yazıcıyı üreticinin sürücüsüyle ya da "Generic / Text Only" ile Windows'a kurun, adını `Printer:Name`'e yazın.
+
+## Kategoriler
+
+Panel: **Katalog → Kategoriler** (yalnızca Admin). Ekleme (2 harfli kod addan önerilir), ad/açıklama değiştirme,
+silme. Kategori kodu ürün kodunun parçasıdır (W6**ER**01Z8): kategoride kodlu ürün oluştuktan sonra kod değiştirilemez;
+ürünü olan kategori silinemez. API: `GET /api/categories/manage`, `POST /api/categories`, `PUT /api/categories/{id}`,
+`PUT /api/categories/{id}/code`, `DELETE /api/categories/{id}`.
+
 ## İşlem kaydı
 
 Panel: **Güvenlik & Sistem → İşlem Kaydı** (Admin tüm mağazalar, mağaza müdürü kendi mağazası; kasiyer erişemez).

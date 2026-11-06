@@ -54,13 +54,19 @@ public record ReceiptData(
 /// yanlis mali bilgi gostermemek icin bilerek atlandi. Store entity'sine
 /// Address/Phone/TaxNumber eklenirse buraya kolayca tasinabilir.
 /// </summary>
-public class ReceiptService
+public class ReceiptService(LCWaikiki.POS.WpfClient.Core.Printing.ReceiptPrinter? printer = null)
 {
+	private readonly LCWaikiki.POS.WpfClient.Core.Printing.ReceiptPrinter? _printer = printer;
+
 	private const double ReceiptWidthDiu = 340; // Border'in toplam genisligi (icerik alani = bu - 2*ContentMargin)
 	private const double ContentMargin = 14;
 	private const double RenderDpi = 150;
 
 	private static readonly CultureInfo TrCulture = new("tr-TR");
+
+	/// <summary>Fis PDF klasoru (testler gecici klasore yonlendirir).</summary>
+	public static string OutputRoot { get; set; } = Path.Combine(
+		Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "LCWaikiki", "WPOS", "Receipts");
 
 	public async Task<string> GenerateAndSaveReceiptAsync(ReceiptData data)
 	{
@@ -73,6 +79,11 @@ public class ReceiptService
 		Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
 		SaveAsPdf(pngBytes, widthPx, heightPx, filePath);
+
+		// Termal yazici: PDF kaydedildikten SONRA (yazici hatasi belgeyi kaybettirmez).
+		// Ayni gorsel yeniden kurulur; yazdirma olcekleme/yerlesimi PDF'i etkilemesin.
+		if (_printer?.IsEnabled == true)
+			_printer.Print(BuildReceiptVisual(data), ReceiptWidthDiu, Path.GetFileNameWithoutExtension(filePath));
 
 		await Task.CompletedTask;
 		return filePath;
@@ -348,9 +359,7 @@ public class ReceiptService
 	// ── Kayit yolu: C:\ProgramData\LCWaikiki\WPOS\Receipts\{yyyy-MM}\{FisNo}.pdf ──
 	private static string GetOutputPath(string receiptNumber)
 	{
-		var baseDir = Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-			"LCWaikiki", "WPOS", "Receipts", DateTime.Now.ToString("yyyy-MM"));
+		var baseDir = Path.Combine(OutputRoot, DateTime.Now.ToString("yyyy-MM"));
 
 		return Path.Combine(baseDir, $"{receiptNumber}.pdf");
 	}

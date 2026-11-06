@@ -18,6 +18,28 @@ public class ClientSettings
     /// <summary>"Hizli Urunler" paneli: barkodu olmayan/sik satilan urunler (poset vb.).</summary>
     public List<QuickProductSetting> QuickProducts { get; set; } = new();
     public OfflineSettings Offline { get; set; } = new();
+    public PrinterSettings Printer { get; set; } = new();
+
+    /// <summary>Termal fis yazicisi (bkz. Core/Printing/ReceiptPrinter).</summary>
+    public class PrinterSettings
+    {
+        /// <summary>Kapaliyken fis sadece PDF olarak kaydedilir.</summary>
+        public bool Enabled { get; set; }
+        /// <summary>Windows'taki yazici adi (Ayarlar > Yazicilar). "file:C:\yolis.bin" ham ciktiyi dosyaya yazar.</summary>
+        public string? Name { get; set; }
+        /// <summary>"EscPos" (ham, onerilen) ya da "Driver" (Windows surucusuyle).</summary>
+        public string Mode { get; set; } = "EscPos";
+        /// <summary>80 ya da 58.</summary>
+        public int PaperWidthMm { get; set; } = 80;
+        /// <summary>0: kagida gore (80 mm = 576, 58 mm = 384 nokta). Farkli yazicilar icin elle.</summary>
+        public int DotsPerLine { get; set; }
+        public bool AutoCut { get; set; } = true;
+        public int FeedLinesBeforeCut { get; set; } = 4;
+        /// <summary>Siyah/beyaz esigi (0-255): soluk baskida artirin.</summary>
+        public int Threshold { get; set; } = 180;
+        /// <summary>Nakit odemeli satista cekmece acilir.</summary>
+        public bool OpenDrawerOnCashSale { get; set; } = true;
+    }
 
     /// <summary>Cevrimdisi satis (sunucuya ulasilamadiginda satisa devam).</summary>
     public class OfflineSettings

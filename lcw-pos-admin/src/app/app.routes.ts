@@ -76,6 +76,14 @@ export const routes: Routes = [
             .then(m => m.ProductFormComponent)
       },
 
+      // Kategoriler
+      {
+        path: 'categories',
+        loadComponent: () =>
+          import('./features/categories/category-list.component')
+            .then(m => m.CategoryListComponent)
+      },
+
       // Depo
       {
         path: 'warehouse',

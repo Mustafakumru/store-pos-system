@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LCWaikiki.POS.WpfClient.Core;
 using LCWaikiki.POS.WpfClient.Core.Http;
 using LCWaikiki.POS.WpfClient.Core.Models.Pos;
 using LCWaikiki.POS.WpfClient.Core.Services;
@@ -282,6 +283,14 @@ public partial class MainPosViewModel : BaseViewModel
             // Fis sessizce kaydedilir - kasiyerin dosya yoluyla ilgilenmesine
             // gerek yok, ekstra bir onay/TAMAM popup'i cikmaz.
             await _receiptService.GenerateAndSaveReceiptAsync(receiptData);
+
+            // Nakit odemede cekmece acilir (ayar: Printer:OpenDrawerOnCashSale)
+            if (_settings.Printer.OpenDrawerOnCashSale && _cashDrawerService.IsConfigured
+                && PaymentVM.PaymentLines.Any(p => p.Type == PaymentType.Cash && p.Amount > 0))
+            {
+                var drawerError = _cashDrawerService.Open();
+                if (drawerError is not null) AppLog.Warn("Cekmece acilamadi: " + drawerError);
+            }
         }
         catch (Exception ex)
         {

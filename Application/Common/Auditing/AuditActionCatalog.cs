@@ -1,4 +1,4 @@
-namespace Application.Common.Auditing;
+﻿namespace Application.Common.Auditing;
 
 /// <summary>İşlem kaydı anahtarlarının ekranda görünen Türkçe adları.</summary>
 public static class AuditActionCatalog
@@ -44,6 +44,9 @@ public static class AuditActionCatalog
         ["Products.DeleteGroupImage"] = "Ürün görseli silme",
         ["Products.UploadImage"] = "Görsel yükleme",
         ["Categories.UpdateCode"] = "Kategori kodu değiştirme",
+        ["Categories.Create"] = "Kategori oluşturma",
+        ["Categories.Update"] = "Kategori güncelleme",
+        ["Categories.Delete"] = "Kategori silme",
         ["Warehouse.Receive"] = "Depo mal kabul",
         ["StockTransfers.Create"] = "Sevk talebi",
         ["StockTransfers.Ship"] = "Sevk gönderimi",

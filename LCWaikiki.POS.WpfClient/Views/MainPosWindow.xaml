@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:http="clr-namespace:LCWaikiki.POS.WpfClient.Core.Http"
         xmlns:offline="clr-namespace:LCWaikiki.POS.WpfClient.Core.Offline"
+        xmlns:printing="clr-namespace:LCWaikiki.POS.WpfClient.Core.Printing"
         xmlns:views="clr-namespace:LCWaikiki.POS.WpfClient.Views"
         xmlns:converters="clr-namespace:LCWaikiki.POS.WpfClient.Converters"
         Title="WPOS - Fis Ekrani"
@@ -282,6 +283,11 @@
                                FontSize="11" FontWeight="SemiBold" Foreground="#E65100" Margin="8,0,0,0" VerticalAlignment="Center"
                                ToolTip="Sunucuya gonderilmemis cevrimdisi satislar (Ana Menu > Cevrimdisi Satislar)"
                                Visibility="{Binding HasPending, Source={x:Static offline:OfflineSaleQueue.Current}, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <TextBlock Text="{Binding LastError, Source={x:Static printing:PrinterStatus.Instance}}"
+                               FontSize="11" FontWeight="SemiBold" Foreground="#C62828" Margin="8,0,0,0" VerticalAlignment="Center"
+                               MaxWidth="420" TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding LastError, Source={x:Static printing:PrinterStatus.Instance}}"
+                               Visibility="{Binding HasError, Source={x:Static printing:PrinterStatus.Instance}, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
             </Grid>
         </Border>

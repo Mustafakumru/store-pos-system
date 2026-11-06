@@ -138,6 +138,7 @@ export class SidebarComponent {
       items: [
         { label: 'Ürünler',       icon: 'pi-box',        route: '/admin/products' },
         { label: 'Yeni Ürün',     icon: 'pi-plus-circle', route: '/admin/products/new' },
+        { label: 'Kategoriler',   icon: 'pi-tags',       route: '/admin/categories' },
       ]
     },
     {

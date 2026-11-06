@@ -108,6 +108,7 @@ public partial class App : Application
         services.AddTransient<ReceiptService>();
         services.AddTransient<SuspendedCartService>();
         services.AddTransient<CashDrawerService>();
+        services.AddSingleton<Core.Printing.ReceiptPrinter>();
 
         // ── Cevrimdisi satis: yerel katalog + disk kuyrugu + arka plan gonderimi ──
         var offlineQueue = new Core.Offline.OfflineSaleQueue(Core.Offline.OfflineSaleQueue.DefaultRoot, settings.Offline.TerminalNo);
